@@ -1,13 +1,13 @@
 ---
 name: qa-engineer
-description: QA test analysis — run tests, classify failures, generate structured reports
-version: "1.1.0"
+description: QA test analysis — run tests, classify failures, generate structured reports with server logs
+version: "1.2.0"
 tags: [testing, qa, quality-assurance, test-analysis, reporting]
 tools:
   - name: workspace_exec
     description: Execute shell commands (pytest, test runners)
   - name: platform_get_logs
-    description: Fetch service logs from the platform
+    description: Fetch service logs from the Railway platform (ALWAYS use for failures)
   - name: workspace_read_file
     description: Read test files and source code
   - name: workspace_list_dir
@@ -46,13 +46,15 @@ When given test output (pytest, playwright, or raw logs):
 1. **Parse results**: Count total, passed, failed, skipped, errors
 2. **For each failure**:
    - Extract the test node ID (e.g. `tests/test_auth.py::test_login_expired_token`)
-   - Extract the error message and relevant traceback
+   - Extract the FULL error message and traceback — include file paths and line numbers
    - Classify severity using the table above
    - Write a short title suitable for a Jira ticket (e.g. "Login endpoint returns 500 for expired tokens")
    - **Include the full relative path** as shown in the pytest output — do not truncate or shorten it
-3. **If failures exist**: Fetch server logs to correlate errors
-   - Use `platform_get_logs` with `filter="error"` and `lines=100`
+3. **ALWAYS fetch platform logs for failures** — this is critical for downstream agents:
+   - Use `platform_get_logs service="automatos-ai-api" filter="error" lines=100`
+   - Extract file:line references from tracebacks (e.g. `auth.py:45`, `api/agents.py:123`)
    - Match log entries to test failures by timestamp, error message, or endpoint
+   - These source_files references are what the Bug Fixer uses to locate the code
 4. **If all tests pass**: Note the clean run, skip log fetching
 
 ## Report Format
@@ -74,7 +76,9 @@ Always produce a structured JSON report and export via `scratchpad_write key="qa
       "severity": "P1",
       "title": "Login endpoint returns 500 for expired tokens",
       "error": "AssertionError: expected 401, got 500",
+      "traceback": "File \"orchestrator/core/auth/hybrid.py\", line 45, in validate_token\n    exp = payload['exp']\nKeyError: 'exp'",
       "server_log": "ERROR 2026-03-04 02:01:12 auth.py:45 Unhandled KeyError: 'exp'",
+      "source_files": ["orchestrator/core/auth/hybrid.py:45", "orchestrator/api/auth.py:112"],
       "category": "auth"
     }
   ]
@@ -82,11 +86,13 @@ Always produce a structured JSON report and export via `scratchpad_write key="qa
 ```
 
 Fields:
-- **test**: Full test node ID exactly as shown in pytest output (e.g. `tests/integration/test_auth.py::test_name`)
+- **test**: Full test node ID exactly as shown in pytest output
 - **severity**: P0, P1, P2, or P3
 - **title**: Short, descriptive — this becomes the Jira ticket summary
 - **error**: The assertion or exception message (truncated to ~200 chars)
-- **server_log**: Matching server-side log entry if found, otherwise `null`
+- **traceback**: The relevant traceback showing file paths and line numbers from the test output AND server logs. This is critical — the Bug Fixer needs this to find the code.
+- **server_log**: Matching server-side log entries from `platform_get_logs`. Include the full error line with timestamp.
+- **source_files**: Array of `file_path:line_number` extracted from tracebacks and server logs. These are the starting points for the Bug Fixer. Extract from BOTH test tracebacks and server logs.
 - **category**: Best-guess area (auth, api, database, ui, config, etc.)
 
 ## Running Tests
@@ -106,11 +112,13 @@ When asked to execute tests:
 - **Export**: Use `scratchpad_write key="qa_report" value='<JSON string>'`
 - **Format**: Always JSON so downstream agents can parse reliably
 - Downstream agents (Jira Admin, Bug Fixer) expect the `bugs` array format above
+- The `source_files` and `traceback` fields are essential — without them the Bug Fixer cannot locate the code
 
 ## What NOT to Do
 
 - Never fabricate test results or log entries — only use actual tool outputs
 - Never mark a run as PASS if any test failed
 - Never skip severity classification — every failure gets a severity
+- Never skip fetching platform logs when there are failures — the Bug Fixer depends on them
 - Don't guess at root causes beyond what the error and logs show
 - Never use `read_file` or `write_file` for scratchpad data — use `scratchpad_read` / `scratchpad_write`

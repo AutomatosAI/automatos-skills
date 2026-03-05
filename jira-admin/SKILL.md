@@ -1,7 +1,7 @@
 ---
 name: jira-admin
 description: Jira project administration — create, update, transition, and comment on issues
-version: "1.1.0"
+version: "1.2.0"
 tags: [jira, project-management, ticketing, bug-tracking]
 tools:
   - name: JIRA_CREATE_ISSUE
@@ -18,6 +18,8 @@ tools:
     description: Search issues with JQL
   - name: SLACK_SEND_MESSAGE
     description: Post messages to Slack channels
+  - name: composio_execute
+    description: GitHub API operations (list PRs, search)
   - name: scratchpad_read
     description: Read data from previous recipe steps (use this, NOT read_file)
   - name: scratchpad_write
@@ -56,16 +58,27 @@ When creating bug tickets from test reports or incident data:
    - **issue_type**: `Bug`
    - **priority_name**: Map from severity using the table above
    - **labels**: Include source labels (e.g. `auto-test`, `nightly-run`, category)
-   - **description**: Include test ID/node ID, error snippet, root cause hint, severity justification
+   - **description**: MUST include all of the following from the QA report:
+     - Test node ID
+     - Error/assertion message
+     - **Traceback** (if available) — this helps the Bug Fixer find the code
+     - **Source files with line numbers** (if available) — e.g. `orchestrator/core/auth.py:45`
+     - **Server log entries** (if available) — from platform_get_logs
+     - Severity justification
 3. Use `scratchpad_write` to export created ticket keys for downstream steps
 
-## Updating Tickets
+The Bug Fixer agent reads these ticket descriptions to locate code. If you omit the traceback, source files, and server logs, the Bug Fixer will be blind.
 
-When updating an existing ticket (e.g. attaching a PR, adding results):
+## Updating Tickets with PR Links
 
-1. Fetch the issue first with JIRA_GET_ISSUE to confirm it exists
-2. Add a comment with the update details (PR link, test results, status change)
-3. Transition the ticket if the workflow state should change
+When updating a ticket after a fix:
+
+1. Use `scratchpad_read` to get fix results (e.g. key="fix_results")
+2. If `pr_url` is present: add a comment with the PR link and transition to "In Review"
+3. If `pr_url` is null/missing but `branch_name` is present:
+   - The PR URL follows the pattern: `https://github.com/{owner}/{repo}/compare/{branch_name}`
+   - Or use `composio_execute` with `GITHUB_LIST_REPO_PULL_REQUESTS` to search for open PRs with the branch name
+4. If both are null (fix was blocked): add a comment explaining the blocker from `blocked_reason` and transition to "Blocked"
 
 ## Common Transitions
 
@@ -100,10 +113,10 @@ When posting to Slack:
 
 When working in a recipe (multi-step workflow):
 
-- **Receiving data**: Use `scratchpad_read` with the key specified by the previous step (e.g. `scratchpad_read key="qa_report"`)
+- **Receiving data**: Use `scratchpad_read` with the key specified by the previous step
 - **Exporting data**: Use `scratchpad_write` with a descriptive key (e.g. `scratchpad_write key="tickets_filed" value=...`)
 - Always export as structured JSON so downstream agents can parse it reliably
-- If previous step data is not available, read it from the step output context provided in your system message
+- If previous step data is not available via scratchpad, read it from the step output context provided in your system message
 
 ## What NOT to Do
 
@@ -112,3 +125,4 @@ When working in a recipe (multi-step workflow):
 - Never create duplicate tickets — search first if unsure
 - Keep comments concise and factual
 - Never use `read_file` or `write_file` for scratchpad data — use `scratchpad_read` / `scratchpad_write`
+- Never omit traceback and source_files from ticket descriptions — the Bug Fixer depends on them

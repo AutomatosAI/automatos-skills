@@ -1,7 +1,7 @@
 ---
 name: bug-fixer
 description: Automated bug fixing — read tickets, find code, write tests, fix, commit, open PRs
-version: "1.1.0"
+version: "1.2.0"
 tags: [debugging, bug-fix, development, git, testing, pull-request]
 tools:
   - name: workspace_git
@@ -42,7 +42,7 @@ The repository is cloned under the workspace at `repos/{repo-name}/`. Before sea
 2. All file paths must be relative to workspace root, prefixed with the repo path
    - Example: `repos/automatos-ai/orchestrator/tests/test_auth.py`
    - Example: `repos/automatos-ai/frontend/components/login.tsx`
-3. If a QA report references `tests/integration/test_foo.py`, the actual workspace path is `repos/{repo-name}/orchestrator/tests/integration/test_foo.py` (or similar — use `workspace_list_dir` and `workspace_grep` to locate it)
+3. If a ticket references `orchestrator/core/auth.py:45`, the workspace path is `repos/{repo-name}/orchestrator/core/auth.py`
 
 **Always discover the structure first. Never assume paths.**
 
@@ -52,8 +52,12 @@ The repository is cloned under the workspace at `repos/{repo-name}/`. Before sea
 
 - Use `scratchpad_read key="issue_details"` (or the key specified) to get ticket data from the previous step
 - Extract: issue key, summary, error message, affected component, file references
-- If the ticket contains `assertion_message` or `source_files`, those are your starting points
-- If not, use error messages and component hints to search
+- **Look for these fields — they are your fastest path to the code:**
+  - `source_files`: Array of `file_path:line_number` — go directly to these files
+  - `traceback`: Stack trace with file paths and line numbers — read these files
+  - `server_log`: Server-side error entries — extract file:line references from these
+  - `error`: The assertion or exception message — search for this string
+- If the ticket has `source_files`, start there. If not, use `traceback` and `server_log`. If none exist, search by error message keywords.
 
 ### 2. Set Up the Workspace
 
@@ -63,16 +67,25 @@ The repository is cloned under the workspace at `repos/{repo-name}/`. Before sea
 
 ### 3. Find the Relevant Code
 
-- Search within the repo directory: `workspace_grep pattern="error_message" path="repos/{repo-name}"`
-- Read files to understand context: `workspace_read_file path="repos/{repo-name}/path/to/file.py"`
+**Start with source_files from the ticket** (if available):
+- Read each file directly: `workspace_read_file path="repos/{repo-name}/{source_file}"`
+- The line number tells you exactly where to look
+
+**If no source_files, search by error keywords:**
+- `workspace_grep pattern="error_message_keyword" path="repos/{repo-name}"`
+- `workspace_grep pattern="function_name" path="repos/{repo-name}"`
 - Use `workspace_list_dir` to explore unfamiliar directories
-- Trace the bug from the error to the root cause
-- Read surrounding code to understand context before changing anything
+
+**Trace the bug from error to root cause:**
+- Read the file at the line number from the traceback
+- Read surrounding code and imports to understand context
+- Identify the actual bug before making any changes
 
 ### 4. Write a Failing Test First
 
 - Before fixing anything, write a test that reproduces the bug
 - Run from repo root: `workspace_exec command="cd repos/{repo-name} && pytest tests/test_file.py::test_name -x -q --tb=short"`
+- If the referenced test file doesn't exist, look for related test files: `workspace_grep pattern="test.*{keyword}" path="repos/{repo-name}/orchestrator/tests"` or `workspace_list_dir path="repos/{repo-name}/orchestrator/tests"`
 - This proves you understand the bug and prevents regressions
 
 ### 5. Apply the Fix
@@ -119,29 +132,30 @@ Use `scratchpad_write` (NOT write_file) with key `"fix_results"`:
 {
   "issue_key": "PILOT-123",
   "branch_name": "fix/PILOT-123",
-  "pr_url": "https://github.com/org/repo/pull/42",
+  "pr_url": "https://github.com/AutomatosAI/automatos-ai/pull/42",
   "files_changed": ["orchestrator/core/auth.py", "orchestrator/tests/test_auth.py"],
   "fix_summary": "Fixed KeyError on expired token by checking 'exp' field existence",
   "tests_passed": true
 }
 ```
 
-If you could NOT fix the bug (e.g. test file doesn't exist, code not found), still export:
+If you could NOT fix the bug (e.g. code not found, can't reproduce), still export:
 ```json
 {
   "issue_key": "PILOT-123",
   "branch_name": null,
   "pr_url": null,
   "files_changed": [],
-  "fix_summary": "Could not locate test file or relevant code. Manual investigation needed.",
+  "fix_summary": "Could not locate relevant source code. Manual investigation needed.",
   "tests_passed": false,
-  "blocked_reason": "Test file tests/integration/test_notifications.py not found in repo"
+  "blocked_reason": "Source files from ticket not found in repo — paths may need verification"
 }
 ```
 
 ## Principles
 
 - **Evidence first**: Never guess at the root cause. Trace from error -> code -> fix.
+- **Source files first**: Always check `source_files` and `traceback` from the ticket before grep searching.
 - **Test first**: Always write or identify a failing test before fixing.
 - **Minimal changes**: Fix the bug, nothing else. No drive-by refactoring.
 - **One bug, one branch**: Each fix gets its own branch and PR.
@@ -157,3 +171,4 @@ If you could NOT fix the bug (e.g. test file doesn't exist, code not found), sti
 - Never skip the failing test step — it proves you understand the bug
 - Never use `read_file` or `write_file` for scratchpad data — use `scratchpad_read` / `scratchpad_write`
 - Never assume file paths — always discover with `workspace_list_dir` or `workspace_grep` first
+- Never give up without exporting a blocked_reason to scratchpad
