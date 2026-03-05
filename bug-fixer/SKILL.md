@@ -36,15 +36,34 @@ When working in a recipe (multi-step workflow):
 
 ## Workspace Layout
 
-The repository is cloned under the workspace at `repos/{repo-name}/`. Before searching or reading files:
+The repository is cloned under the workspace at `repos/automatos-ai/`.
 
-1. Run `workspace_list_dir path="repos"` to discover the repo directory name
-2. All file paths must be relative to workspace root, prefixed with the repo path
-   - Example: `repos/automatos-ai/orchestrator/tests/test_auth.py`
-   - Example: `repos/automatos-ai/frontend/components/login.tsx`
-3. If a ticket references `orchestrator/core/auth.py:45`, the workspace path is `repos/{repo-name}/orchestrator/core/auth.py`
+**CRITICAL: This is a monorepo. The backend code is NOT at the repo root — it is inside `orchestrator/`.**
 
-**Always discover the structure first. Never assume paths.**
+```
+repos/automatos-ai/              ← repo root
+├── orchestrator/                ← ALL backend Python code lives here
+│   ├── api/                     ← FastAPI routers (agents.py, workflow_recipes.py, etc.)
+│   ├── core/                    ← Models, services, auth, config
+│   ├── modules/                 ← Business logic (agents, tools, learning)
+│   ├── consumers/               ← Chatbot, webhooks
+│   └── tests/                   ← pytest test files
+├── frontend/                    ← Next.js React frontend
+│   ├── components/              ← UI components
+│   ├── hooks/                   ← React hooks
+│   └── app/                     ← Pages and routes
+├── services/                    ← Worker services
+└── scripts/                     ← Utility scripts
+```
+
+**Path rules:**
+- If a ticket mentions `api/workflow_recipes.py` → actual path is `repos/automatos-ai/orchestrator/api/workflow_recipes.py`
+- If a ticket mentions `core/auth.py` → actual path is `repos/automatos-ai/orchestrator/core/auth.py`
+- If a ticket mentions `tests/test_auth.py` → actual path is `repos/automatos-ai/orchestrator/tests/test_auth.py`
+- If a ticket mentions a frontend file → it's at `repos/automatos-ai/frontend/...`
+
+**Your FIRST action must always be:** `workspace_list_dir path="repos/automatos-ai"` to confirm the structure.
+Then search within the correct subdirectory: `workspace_grep pattern="keyword" path="repos/automatos-ai/orchestrator"`
 
 ## Workflow
 
@@ -68,12 +87,15 @@ The repository is cloned under the workspace at `repos/{repo-name}/`. Before sea
 ### 3. Find the Relevant Code
 
 **Start with source_files from the ticket** (if available):
-- Read each file directly: `workspace_read_file path="repos/{repo-name}/{source_file}"`
+- Prefix with `repos/automatos-ai/orchestrator/` for backend files
+- Read each file directly: `workspace_read_file path="repos/automatos-ai/orchestrator/{source_file}"`
 - The line number tells you exactly where to look
+- If `workspace_read_file` returns "file not found", try adding/removing the `orchestrator/` prefix
 
 **If no source_files, search by error keywords:**
-- `workspace_grep pattern="error_message_keyword" path="repos/{repo-name}"`
-- `workspace_grep pattern="function_name" path="repos/{repo-name}"`
+- Backend search: `workspace_grep pattern="keyword" path="repos/automatos-ai/orchestrator"`
+- Frontend search: `workspace_grep pattern="keyword" path="repos/automatos-ai/frontend"`
+- Full repo search: `workspace_grep pattern="keyword" path="repos/automatos-ai"`
 - Use `workspace_list_dir` to explore unfamiliar directories
 
 **Trace the bug from error to root cause:**
