@@ -59,13 +59,17 @@ When creating bug tickets from test reports or incident data:
    - **priority_name**: Map from severity using the table above
    - **labels**: Include source labels (e.g. `auto-test`, `nightly-run`, category)
    - **description**: MUST include all of the following from the QA report:
-     - Test node ID
+     - Test node ID (full path, e.g. `orchestrator/tests/integration/test_auth.py::test_name`)
      - Error/assertion message
      - **Traceback** (if available) — this helps the Bug Fixer find the code
      - **Source files with line numbers** (if available) — e.g. `orchestrator/core/auth.py:45`
-     - **Server log entries** (if available) — from platform_get_logs
+     - **Server log entries** (if available) — the matching `server_log` from the bug entry
      - Severity justification
-3. Use `scratchpad_write` to export created ticket keys for downstream steps
+3. **Attach platform logs**: After creating the ticket, if the QA report contains a `platform_logs` field (top-level), add a comment to the ticket with the full platform log output:
+   - Use JIRA_ADD_COMMENT with the ticket key
+   - Comment body: `"Server Logs:\n{code}\n{platform_logs content}\n{code}"`
+   - This gives the Bug Fixer and human developers the complete server-side error context
+4. Use `scratchpad_write` to export created ticket keys for downstream steps
 
 The Bug Fixer agent reads these ticket descriptions to locate code. If you omit the traceback, source files, and server logs, the Bug Fixer will be blind.
 

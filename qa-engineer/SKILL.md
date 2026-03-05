@@ -70,9 +70,10 @@ Always produce a structured JSON report and export via `scratchpad_write key="qa
   "skipped": 0,
   "pass_rate": "98.6%",
   "status": "FAIL",
+  "platform_logs": "ERROR 2026-03-04 02:01:12 auth.py:45 Unhandled KeyError: 'exp'\nERROR 2026-03-04 02:01:12 ...",
   "bugs": [
     {
-      "test": "tests/integration/test_auth.py::test_login_expired_token",
+      "test": "orchestrator/tests/integration/test_auth.py::test_login_expired_token",
       "severity": "P1",
       "title": "Login endpoint returns 500 for expired tokens",
       "error": "AssertionError: expected 401, got 500",
@@ -85,14 +86,17 @@ Always produce a structured JSON report and export via `scratchpad_write key="qa
 }
 ```
 
+**CRITICAL: All paths must be relative to the repo root (`orchestrator/...`, `frontend/...`).** The Bug Fixer prepends `repos/automatos-ai/` to find them in the workspace.
+
 Fields:
-- **test**: Full test node ID exactly as shown in pytest output
+- **test**: Full test node ID with `orchestrator/` prefix (e.g. `orchestrator/tests/integration/test_auth.py::test_name`)
 - **severity**: P0, P1, P2, or P3
 - **title**: Short, descriptive — this becomes the Jira ticket summary
 - **error**: The assertion or exception message (truncated to ~200 chars)
 - **traceback**: The relevant traceback showing file paths and line numbers from the test output AND server logs. This is critical — the Bug Fixer needs this to find the code.
 - **server_log**: Matching server-side log entries from `platform_get_logs`. Include the full error line with timestamp.
-- **source_files**: Array of `file_path:line_number` extracted from tracebacks and server logs. These are the starting points for the Bug Fixer. Extract from BOTH test tracebacks and server logs.
+- **source_files**: Array of `file_path:line_number` relative to repo root. Always prefix with `orchestrator/` for backend files. These are the starting points for the Bug Fixer. Extract from BOTH test tracebacks and server logs.
+- **platform_logs** (top-level): The FULL raw output from `platform_get_logs`. This gets attached to the Jira ticket by the Jira Admin so developers and the Bug Fixer can see the complete server-side error context.
 - **category**: Best-guess area (auth, api, database, ui, config, etc.)
 
 ## Running Tests

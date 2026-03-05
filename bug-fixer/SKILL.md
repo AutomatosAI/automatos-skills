@@ -72,23 +72,28 @@ Then search within the correct subdirectory: `workspace_grep pattern="keyword" p
 - Use `scratchpad_read key="issue_details"` (or the key specified) to get ticket data from the previous step
 - Extract: issue key, summary, error message, affected component, file references
 - **Look for these fields — they are your fastest path to the code:**
-  - `source_files`: Array of `file_path:line_number` — go directly to these files
+  - `source_files`: Array of `file_path:line_number` (e.g. `orchestrator/api/workflow_recipes.py:45`) — go directly to these files
   - `traceback`: Stack trace with file paths and line numbers — read these files
   - `server_log`: Server-side error entries — extract file:line references from these
   - `error`: The assertion or exception message — search for this string
+- **Path conversion**: Source files from tickets use repo-relative paths like `orchestrator/api/workflow_recipes.py`. To read them in the workspace, prepend `repos/automatos-ai/`:
+  - Ticket says `orchestrator/api/workflow_recipes.py:45` → read `repos/automatos-ai/orchestrator/api/workflow_recipes.py`
+  - Ticket says `frontend/components/login.tsx` → read `repos/automatos-ai/frontend/components/login.tsx`
 - If the ticket has `source_files`, start there. If not, use `traceback` and `server_log`. If none exist, search by error message keywords.
+- Also check the Jira ticket comments — the platform server logs may be attached there with additional file:line references.
 
 ### 2. Set Up the Workspace
 
-- Discover repo path: `workspace_list_dir path="repos"`
+- Confirm repo path: `workspace_list_dir path="repos/automatos-ai"`
 - Create a fix branch: `workspace_git operation="checkout" args="-b fix/{issue_key}"`
 - Branch naming: always `fix/{issue_key}` (e.g. `fix/PILOT-123`)
 
 ### 3. Find the Relevant Code
 
 **Start with source_files from the ticket** (if available):
-- Prefix with `repos/automatos-ai/orchestrator/` for backend files
-- Read each file directly: `workspace_read_file path="repos/automatos-ai/orchestrator/{source_file}"`
+- Prepend `repos/automatos-ai/` to every source_file path
+- Read each file directly: `workspace_read_file path="repos/automatos-ai/{source_file}"`
+- Example: source_file `orchestrator/api/workflow_recipes.py:45` → `workspace_read_file path="repos/automatos-ai/orchestrator/api/workflow_recipes.py"`
 - The line number tells you exactly where to look
 - If `workspace_read_file` returns "file not found", try adding/removing the `orchestrator/` prefix
 
