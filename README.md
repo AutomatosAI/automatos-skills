@@ -12,11 +12,37 @@ A skill is a document — instructions, process guidance, formats, and examples.
 
 ## Available Skills
 
+### Agent Roles (The Automatos Team)
+
+| Agent | Skill | Description |
+|-------|-------|-------------|
+| **SENTINEL** | `sentinel/` | Infrastructure watchdog — API health, error spikes, deploy status, cost anomalies. Heartbeat every 15min. |
+| **PATCHER** | `bug-fixer/` | End-to-end bug fixing: read ticket → find code → write failing test → minimal fix → verify → commit → open draft PR. |
+| **SCOUT** | `scout/` | Lead intelligence — qualify signups, score prospects (1-10), draft outreach, track pipeline. |
+| **HARPER** | `harper/` | Content machine — LinkedIn posts, changelog updates, tweets from real git history and platform data. |
+| **ECHO** | `echo/` | Customer support — classify messages, auto-reply FAQs, create bug tickets, flag churn signals. |
+| **ATLAS** | `atlas/` | Business intelligence — weekly cost/revenue analysis, usage trends, anomaly detection, optimization recommendations. |
+| **FORGE** | `forge/` | Recipe builder — natural language → multi-step workflows with agent assignments and triggers. |
+| **ORACLE** | `oracle/` | Knowledge curator — audit RAG health, reprocess failures, sync Google Drive, prune stale content. |
+
+### DevOps Pipeline (Existing)
+
 | Skill | Directory | Description |
 |-------|-----------|-------------|
-| **Jira Admin** | `jira-admin/` | Create, update, transition, and comment on Jira issues. Priority mapping (P0→Highest), ticket lifecycle, data handoff between recipe steps. |
-| **QA Engineer** | `qa-engineer/` | Run tests, classify failures by severity (P0–P3), correlate with server logs, produce structured JSON reports for downstream agents. |
-| **Bug Fixer** | `bug-fixer/` | End-to-end bug fixing: read ticket → find code → write failing test → minimal fix → verify → commit → open draft PR. |
+| **QA Engineer** | `qa-engineer/` | Run tests, classify failures by severity (P0–P3), correlate with server logs, produce structured JSON reports. |
+| **Jira Admin** | `jira-admin/` | Create, update, transition, and comment on Jira issues. Priority mapping, ticket lifecycle, data handoff. |
+
+### Integration Skills (Composio)
+
+| Skill | Directory | Description |
+|-------|-----------|-------------|
+| **Gmail** | `gmail-automation/` | Send, reply, search, labels, drafts, attachments via Composio Gmail toolkit. |
+| **Slack** | `slack-automation/` | Messages, search, threads, channels, reactions, scheduling via Composio Slack toolkit. |
+| **Jira** | `jira-automation/` | JQL search, create/edit issues, sprints, comments via Composio Jira toolkit. |
+| **Google Calendar** | `google-calendar-automation/` | Events, availability, attendees, recurring events via Composio Calendar toolkit. |
+| **LinkedIn** | `linkedin-automation/` | Text posts, article shares, image posts, comments via Composio LinkedIn toolkit. |
+| **Twitter/X** | `twitter-automation/` | Posts, search, bookmarks, replies via Composio Twitter toolkit. |
+| **TikTok** | `tiktok-automation/` | Video/photo upload, publish, status polling via Composio TikTok toolkit. |
 
 ## SKILL.md Format
 
