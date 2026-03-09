@@ -24,6 +24,7 @@ A skill is a document — instructions, process guidance, formats, and examples.
 | **ATLAS** | `atlas/` | Business intelligence — weekly cost/revenue analysis, usage trends, anomaly detection, optimization recommendations. |
 | **FORGE** | `forge/` | Recipe builder — natural language → multi-step workflows with agent assignments and triggers. |
 | **ORACLE** | `oracle/` | Knowledge curator — audit RAG health, reprocess failures, sync Google Drive, prune stale content. |
+| **RALLY** | `rally/` | Community growth — map relevant communities, identify creators and builders, score outreach opportunities, grow ecosystem authentically. |
 
 ### DevOps Pipeline (Existing)
 
