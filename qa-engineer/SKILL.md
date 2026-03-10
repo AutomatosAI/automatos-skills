@@ -8,6 +8,8 @@ tools:
     description: Execute shell commands (pytest, test runners)
   - name: platform_get_logs
     description: Fetch service logs from the Railway platform (ALWAYS use for failures)
+  - name: platform_query_loki_logs
+    description: Searches Loki logs by service, level, keyword, time range
   - name: workspace_read_file
     description: Read test files and source code
   - name: workspace_list_dir
@@ -96,7 +98,7 @@ Fields:
 - **traceback**: The relevant traceback showing file paths and line numbers from the test output AND server logs. This is critical — the Bug Fixer needs this to find the code.
 - **server_log**: Matching server-side log entries from `platform_get_logs`. Include the full error line with timestamp.
 - **source_files**: Array of `file_path:line_number` relative to repo root. Always prefix with `orchestrator/` for backend files. These are the starting points for the Bug Fixer. Extract from BOTH test tracebacks and server logs.
-- **platform_logs** (top-level): The FULL raw output from `platform_get_logs`. This gets attached to the Jira ticket by the Jira Admin so developers and the Bug Fixer can see the complete server-side error context.
+- **platform_logs** (top-level): The FULL raw output from `platform_query_loki_logs`. This gets attached to the Jira ticket by the Jira Admin so developers and the Bug Fixer can see the complete server-side error context.
 - **category**: Best-guess area (auth, api, database, ui, config, etc.)
 
 ## Running Tests
@@ -104,12 +106,37 @@ Fields:
 When asked to execute tests:
 
 1. Use `workspace_exec` with the appropriate test command
-2. Common commands:
+2. Prefer the dedicated runner scripts when the task is one of the Automatos internal test recipes or when those scripts are present in the repo:
+   - `python3 tests/run_health_regression.py` — focused API Health Check & Regression Detector
+   - `python3 tests/run_nightly.py` — full Nightly Self-Test Suite
+   - `python3 tests/run_gap_finder.py` — Weekly Test Coverage Gap Finder
+3. Common direct commands:
    - `pytest tests/ -x -q --tb=short` — fast, stop on first failure
    - `pytest tests/ -q --tb=short` — run all, short tracebacks
    - `pytest tests/test_specific.py -v` — verbose single file
-   - `python3 tests/run_nightly.py` — custom test runner (if exists)
 3. Capture the full output for analysis
+
+### Runner Intent
+
+Use the runners for the following situations when they exist and match the current workflow:
+
+- **`run_health_regression.py`**: Best default for operational QA. Runs a curated high-signal subset and produces structured outputs for downstream agents.
+- **`run_nightly.py`**: Use for broad overnight confidence checks. This is the widest automated coverage pass.
+- **`run_gap_finder.py`**: Use for weekly analysis of missing or weak test coverage. This is not a runtime health check.
+
+### Expected Output Files
+
+Know these output artifacts and use them directly:
+
+- `run_health_regression.py` writes:
+  - `health-regression-report.json`
+  - `health-regression-summary.json`
+  - `qa-report.json`
+- `run_nightly.py` writes:
+  - `test-report.json`
+  - `test-summary.json`
+- `run_gap_finder.py` writes:
+  - `coverage-gap-summary.json`
 
 ## Data Handoff
 
@@ -117,6 +144,15 @@ When asked to execute tests:
 - **Format**: Always JSON so downstream agents can parse reliably
 - Downstream agents (Jira Admin, Bug Fixer) expect the `bugs` array format above
 - The `source_files` and `traceback` fields are essential — without them the Bug Fixer cannot locate the code
+- When `qa-report.json` exists from `run_health_regression.py`, prefer that as the source artifact for `scratchpad_write`
+- `health-regression-summary.json` is useful for run-level status, but `qa-report.json` is the primary bug handoff
+- `coverage-gap-summary.json` should be handed to Jira Admin for test-gap stories/tasks, not bug tickets
+- If these files do not exist, produce the same structure yourself from raw pytest or platform outputs
+- If `qa-report.json` contains `log_fetch_required: true`, enrich it before handoff:
+  - fetch platform logs with `platform_get_logs` or `platform_query_loki_logs`
+  - populate top-level `platform_logs`
+  - populate per-bug `server_log` where matches exist
+- Do not hand off a bare `qa-report.json` with empty log context when failures exist if logs can be fetched
 
 ## What NOT to Do
 

@@ -69,9 +69,29 @@ When creating bug tickets from test reports or incident data:
    - Use JIRA_ADD_COMMENT with the ticket key
    - Comment body: `"Server Logs:\n{code}\n{platform_logs content}\n{code}"`
    - This gives the Bug Fixer and human developers the complete server-side error context
-4. Use `scratchpad_write` to export created ticket keys for downstream steps
+4. Use `scratchpad_write` to export created ticket keys **and** downstream fix context for Bug Fixer
 
 The Bug Fixer agent reads these ticket descriptions to locate code. If you omit the traceback, source files, and server logs, the Bug Fixer will be blind.
+
+### Preferred Input Artifacts
+
+When working with the Automatos testing recipes, you may receive these structured files or scratchpad payloads:
+
+- `qa-report.json`
+  - Primary source for bug creation from `API Health Check & Regression Detector`
+  - Best input for creating Jira bug tickets
+- `health-regression-summary.json`
+  - Run-level status summary
+  - Useful for comments, overview tickets, or Slack notifications
+- `test-summary.json`
+  - Broad nightly summary from `Nightly Self-Test Suite`
+  - Good for nightly health reporting
+- `coverage-gap-summary.json`
+  - Weekly planning input
+  - Use this to create Tasks/Stories for missing or weak coverage, not Bugs
+
+If these files are not directly provided, expect the QA Engineer to export their contents into scratchpad keys such as `qa_report`.
+If neither files nor scratchpad payloads are present, fall back to the issue/test data actually provided in the current workflow.
 
 ## Updating Tickets with PR Links
 
@@ -121,6 +141,29 @@ When working in a recipe (multi-step workflow):
 - **Exporting data**: Use `scratchpad_write` with a descriptive key (e.g. `scratchpad_write key="tickets_filed" value=...`)
 - Always export as structured JSON so downstream agents can parse it reliably
 - If previous step data is not available via scratchpad, read it from the step output context provided in your system message
+- For coverage gap reports, export structured ticket drafts keyed by domain or gap type so weekly planning steps can group related work
+
+### Required Bug Fixer Handoff
+
+When a bug ticket is created for downstream fixing, do NOT export only the ticket key.
+You must also export an `issue_details` payload for Bug Fixer using `scratchpad_write`.
+
+Minimum structure:
+
+```json
+{
+  "issue_key": "PILOT-123",
+  "summary": "Login endpoint returns 500 for expired tokens",
+  "error": "AssertionError: expected 401, got 500",
+  "traceback": "File \"orchestrator/core/auth/hybrid.py\", line 45, ...",
+  "source_files": ["orchestrator/core/auth/hybrid.py:45", "orchestrator/api/auth.py:112"],
+  "server_log": "ERROR ...",
+  "severity": "P1",
+  "category": "auth"
+}
+```
+
+This handoff is mandatory when Bug Fixer is the downstream step and may not have direct Jira read tools in that recipe.
 
 ## What NOT to Do
 

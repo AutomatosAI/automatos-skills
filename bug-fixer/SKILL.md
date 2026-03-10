@@ -70,11 +70,13 @@ Then search within the correct subdirectory: `workspace_grep pattern="keyword" p
 ### 1. Understand the Bug
 
 - Use `scratchpad_read key="issue_details"` (or the key specified) to get ticket data from the previous step
+- In test-driven workflows, issue details may originate from `qa-report.json` via Jira Admin. When present, treat that report as the source of truth for `source_files`, `traceback`, `assertion_message`, and severity.
 - Extract: issue key, summary, error message, affected component, file references
 - **Look for these fields — they are your fastest path to the code:**
   - `source_files`: Array of `file_path:line_number` (e.g. `orchestrator/api/workflow_recipes.py:45`) — go directly to these files
   - `traceback`: Stack trace with file paths and line numbers — read these files
   - `server_log`: Server-side error entries — extract file:line references from these
+  - `assertion_message`: Short failure summary from regression runners — use this as the first grep/search phrase
   - `error`: The assertion or exception message — search for this string
 - **Path conversion**: Source files from tickets use repo-relative paths like `orchestrator/api/workflow_recipes.py`. To read them in the workspace, prepend `repos/automatos-ai/`:
   - Ticket says `orchestrator/api/workflow_recipes.py:45` → read `repos/automatos-ai/orchestrator/api/workflow_recipes.py`
@@ -111,7 +113,10 @@ Then search within the correct subdirectory: `workspace_grep pattern="keyword" p
 ### 4. Write a Failing Test First
 
 - Before fixing anything, write a test that reproduces the bug
-- Run from repo root: `workspace_exec command="cd repos/{repo-name} && pytest tests/test_file.py::test_name -x -q --tb=short"`
+- If the bug comes from `API Health Check & Regression Detector`, start by locating the failing test named in the ticket and rerun that exact node first.
+- If the bug comes from a different workflow or a manually reported issue, adapt the reproduction strategy to the evidence provided.
+- QA reports may emit repo-relative test node IDs like `orchestrator/tests/...::test_name`. When rerunning from repo root, use that full repo-relative node directly.
+- Run from repo root: `workspace_exec command="cd repos/{repo-name} && pytest orchestrator/tests/test_file.py::test_name -x -q --tb=short"`
 - If the referenced test file doesn't exist, look for related test files: `workspace_grep pattern="test.*{keyword}" path="repos/{repo-name}/orchestrator/tests"` or `workspace_list_dir path="repos/{repo-name}/orchestrator/tests"`
 - This proves you understand the bug and prevents regressions
 
@@ -124,7 +129,7 @@ Then search within the correct subdirectory: `workspace_grep pattern="keyword" p
 
 ### 6. Verify
 
-- Run the specific test: `workspace_exec command="cd repos/{repo-name} && pytest tests/test_file.py -x -q --tb=short"`
+- Run the specific test: `workspace_exec command="cd repos/{repo-name} && pytest orchestrator/tests/test_file.py -x -q --tb=short"`
 - Run the broader test suite to check for regressions
 - If tests fail, read the output, adjust the fix, and re-verify
 - Do not proceed until tests pass
