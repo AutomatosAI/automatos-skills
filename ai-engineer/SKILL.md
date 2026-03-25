@@ -33,7 +33,7 @@ Review token consumption, cost per model, and usage trends. Identify expensive o
 
 ### Step 2: Map AI Integrations
 ```json
-{ "tool": "workspace_grep", "params": { "pattern": "openai|anthropic|llm|completion|embedding|chat_completion", "path": "src/" } }
+{ "tool": "workspace_grep", "params": { "pattern": "llm|completion|embedding|chat_completion|api_key|model_config", "path": "src/" } }
 ```
 Find all LLM calls. Document which models are used where, prompt patterns, and token budgets.
 
