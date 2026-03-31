@@ -43,14 +43,16 @@ Assets at `/brand/`:
 
 Orange is the hero accent. Use sparingly for emphasis — not everywhere.
 
-### Semantic
-| Role        | Value                    | Use                        |
-|-------------|--------------------------|----------------------------|
-| Success     | hsl(160, 84%, 39%)       | Completed, confirmed, good |
-| Info        | hsl(217, 91%, 60%)       | Running, informational     |
-| Warning     | hsl(43, 96%, 56%)        | Alerts, caution            |
-| Destructive | hsl(0, 84%, 55%)         | Errors, delete, danger     |
-| Agent       | hsl(271, 91%, 65%)       | Agent-related elements     |
+### Semantic (UI only — NOT for generated images)
+These colors exist **only in the product UI** for status indicators. They are **never used in generated images, blog graphics, diagrams, or marketing visuals**.
+
+| Role        | Value                    | UI Use Only              |
+|-------------|--------------------------|--------------------------|
+| Success     | hsl(160, 84%, 39%)       | Completed states in UI   |
+| Info        | hsl(217, 91%, 60%)       | Running states in UI     |
+| Warning     | hsl(43, 96%, 56%)        | Alert badges in UI       |
+| Destructive | hsl(0, 84%, 55%)         | Error states in UI       |
+| Agent       | hsl(271, 91%, 65%)       | Agent badges in UI       |
 
 ### Neutrals — Dark Mode (primary context)
 | Element    | Value             |
@@ -70,7 +72,7 @@ Orange is the hero accent. Use sparingly for emphasis — not everywhere.
 | Muted      | hsl(0, 0%, 93%)   |
 | Text       | hsl(0, 0%, 10%)   |
 
-### Charts
+### Charts (UI dashboards only)
 5-color sequence: orange (primary), blue (info), green (success), purple (agent), yellow (warning).
 
 ## Typography
@@ -107,11 +109,46 @@ No custom web fonts. System fonts for performance.
 ### Tone
 Clean, technically confident, functional with polish. Not playful — purposeful. Strong hierarchy: one focal point per composition.
 
+## Image Generation Rules (CRITICAL)
+
+All generated images — blog headers, diagrams, infographics, social cards, article visuals — MUST follow this restricted palette. This is the most important section for visual asset creation.
+
+### The Only Colors Allowed in Generated Images
+
+| Layer        | What to use                                      |
+|--------------|--------------------------------------------------|
+| Background   | Dark charcoal/near-black (#0f0f0f to #1a1a1a)    |
+| Structure    | Grays only — #2a2a2a, #3a3a3a, #4a4a4a, #666666  |
+| Accent       | Orange `#ff6b35` — lines, glows, borders, highlights |
+| Text         | White (#ffffff) or light gray (#cccccc)           |
+
+### What This Looks Like
+- **Background**: Deep, flat dark charcoal. Not blue-black, not navy — neutral dark gray.
+- **Shapes & structure**: Monochromatic gray cards, panels, wireframes, nodes. Multiple shades of gray for depth — darker for recessed, lighter for raised.
+- **Accent**: Orange `#ff6b35` used selectively for borders, glow rings, connector lines, highlighted elements, thin outlines. Not solid orange fills — orange as line work and glow.
+- **Text & labels**: Clean white or light gray. No colored text.
+- **Overall feel**: Like a dark-mode UI screenshot — restrained, technical, premium.
+
+### Banned in Generated Images
+- **NO blue** — no blue backgrounds, no blue glows, no blue nodes
+- **NO green** — no green accents, no green progress bars, no green nodes
+- **NO purple** — no purple elements of any kind
+- **NO yellow/gold** — no yellow highlights or warning colors
+- **NO cyan/teal** — no teal accents or connections
+- **NO gradients mixing multiple hues** — no rainbow, no blue-to-green, no purple-to-pink
+- **NO colorful node networks** — if showing a network/graph, nodes are gray with orange connections
+- **NO colorful data visualization** — use orange + shades of gray only
+
+The ONLY non-gray, non-white color in any generated image is orange `#ff6b35`.
+
+### Reference Style
+Think: dark IDE theme, Vercel's marketing visuals, Linear's dark mode. Monochrome gray structure with a single warm accent color (our orange). Sophisticated, not colorful.
+
 ## Design Rules
 
 1. **Dark mode first** — design for dark, adapt to light
 2. **Orange is sacred** — only `#ff6b35` for primary accent, never a random orange
-3. **No off-palette colors** — every color must map to the semantic palette above
+3. **Monochrome + orange** — generated images use ONLY dark grays + orange. No other colors.
 4. **Hierarchy over decoration** — one focal point per composition
 5. **Glass, not flat** — cards and panels use backdrop blur, not solid backgrounds
 6. **Purposeful whitespace** — let elements breathe, don't crowd
