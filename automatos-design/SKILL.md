@@ -1,7 +1,7 @@
 ---
 name: automatos-design
 description: Automatos AI brand identity reference — colors, typography, visual style, and design rules for consistent asset creation
-version: "1.0.0"
+version: "1.1.0"
 tags: [design, brand, identity, colors, visual, ui]
 category: agent-role
 tools:
