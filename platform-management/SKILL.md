@@ -196,11 +196,44 @@ A workspace starts **blank**. Nothing is installed. The owner decides what goes 
 
 **Principle:** Keep it clean. Only install what the business actually needs. A Shopify store doesn't need GitHub tools. A dev team doesn't need Shopify plugins.
 
+### THE INSTALL CHAIN — MANDATORY FOR EVERY ITEM
+
+Nothing from the marketplace is usable until it is installed in the workspace. This is a hard rule with no exceptions.
+
+**Three layers — all three must be satisfied before an item works:**
+
+| Step | Action | Tool | What It Does |
+|------|--------|------|-------------|
+| 1. **Find** | Browse the marketplace | `platform_browse_marketplace_*` | Discovers what exists — does NOT make it usable |
+| 2. **Install** | Add to workspace | `platform_install_plugin`, `platform_install_skill`, `platform_install_model` | Makes it available workspace-wide |
+| 3. **Assign** | Wire to a specific agent | `platform_assign_tool_to_agent`, `platform_assign_skill_to_agent`, `platform_assign_plugin_to_agent` | Agent can now actually use it |
+
+**After assigning, always VERIFY:**
+```json
+{ "tool": "platform_get_agent", "params": { "agent_name": "AGENT_NAME" } }
+```
+Check the response shows the tool/skill/plugin in the agent's assignments. If it is not there, the assignment failed — do not tell the user it worked.
+
+**NEVER claim an agent has a capability unless you have verified it with `platform_get_agent`.** Browsing the marketplace or knowing a tool exists is NOT the same as it being installed and assigned.
+
+**Standard for ALL marketplace items — agents, skills, plugins, tools, models:**
+- "Add to Workspace" = install at workspace level
+- "Assign to Agent" = wire to a specific agent
+- Both steps required. No shortcuts.
+
+**When a user asks for an agent with specific capabilities:**
+1. Search the marketplace for matching tools, skills, or agent templates
+2. Install any required items to the workspace
+3. Create or configure the agent
+4. Assign every required tool, skill, and plugin to the agent
+5. Verify the agent's final configuration
+6. Report exactly what was installed, assigned, and verified
+
 ---
 
 ## 2. Marketplace — Browse, Evaluate, Install
 
-The marketplace has three catalogs: **agents** (templates), **skills** (capabilities), and **plugins** (tool bundles). Always browse before building custom — reuse beats reinvention.
+The marketplace has five catalogs: **agents** (templates), **skills** (capabilities), **plugins** (tool bundles), **LLMs** (models), and **tools** (integrations). Always browse before building custom — reuse beats reinvention.
 
 ### 2a. Browse What's Available
 
