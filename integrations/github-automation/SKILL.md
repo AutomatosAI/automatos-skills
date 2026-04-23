@@ -1,18 +1,20 @@
 ---
 name: github-automation
 description: Commit, branch, push, and manage code in GitHub repos — both via local workspace git and direct GitHub API (Composio)
-version: "1.0.0"
+version: "1.1.0"
 tags: [github, git, version-control, code, commit, push, branch]
 category: productivity
 tools:
   - name: workspace_git
-    description: Run git operations (status, add, commit, push, pull, branch, checkout) inside the workspace repo
+    description: Run git operations (status, diff, add, commit, push, pull, log, branch, checkout, stash, show, blame, fetch) inside the workspace repo. Does NOT support `remote` — use workspace_exec for that.
+  - name: workspace_exec
+    description: Shell exec inside the repo dir — fallback for git ops not in workspace_git's enum (e.g., `git remote -v`, `git config`)
+  - name: workspace_list_dir
+    description: List directory contents — used to discover the cloned repo name under `repos/`
   - name: workspace_read_file
     description: Read files in the cloned repo
   - name: workspace_write_file
     description: Edit files in the cloned repo before committing
-  - name: workspace_exec
-    description: Run tests or build commands in the repo (optional)
   - name: composio_execute
     description: Execute Composio GITHUB_* actions (for direct API operations — PRs, issues, remote commits)
 ---
@@ -37,6 +39,8 @@ Use this skill when the user wants to make code changes and put them into GitHub
 
 - **GitHub tool must be installed and connected** in Settings → Tools & Accounts. Without it, Composio actions return `ConnectedAccountNotFound` (code 1810).
 - **For local git operations**, a repo must already be cloned into the workspace. Clones land under `repos/<repo-name>/`. If no repo is cloned, tell the user to open Workspace → Explorer → **Clone Repo**.
+- **Git identity** is configured automatically via `.gitconfig` injected into the workspace root when the repo is cloned. If a `commit` fails with *"Please tell me who you are"*, the credentials weren't injected — tell the user to reconnect their GitHub integration rather than setting `user.name`/`user.email` yourself.
+- **Composio action names**: this skill's action names (`GITHUB_CREATE_A_PULL_REQUEST`, etc.) match the Composio toolkit at time of writing. If you get `400 Invalid action` from Composio, the action name may have changed — surface the error to the user instead of guessing alternates.
 
 ## Two Paths — Pick The Right One
 
@@ -209,9 +213,18 @@ composio_execute app_name="GITHUB" action="GITHUB_LIST_REPOSITORIES_FOR_THE_AUTH
 
 If the user says "commit to my repo" without naming it:
 
-1. **Prefer local clone context.** If a repo is cloned in the workspace, run `workspace_git operation="remote" args="-v"` to get the origin URL and parse `owner/repo` from it. Use Path A against that.
+1. **Prefer local clone context.** If a repo is cloned in the workspace:
+   - Use `workspace_list_dir path="repos"` to see the repo directory name.
+   - If you need the GitHub `owner/repo` string (e.g., for a Composio PR action), run `workspace_exec command="git remote -v"` and parse the origin URL. **`workspace_git` does not support the `remote` operation** — use `workspace_exec` for it.
+   - For Path A (local git ops), you do not need owner/repo at all — `workspace_git` auto-detects the repo dir.
 2. **Otherwise ask** — "Which repo? I can see these in your account: …" and list repos from `GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER`.
 3. **Don't guess** owner/repo — Composio returns `400 Invalid request data` for wrong values, and silent failures waste tokens.
+
+### Multiple repos cloned
+
+If `repos/` contains more than one directory, `workspace_git` will silently pick the first one (alphabetical). To target a specific repo:
+- Use `workspace_exec` with an explicit `cwd`: `workspace_exec command="git status" cwd="repos/<repo-name>"`.
+- Or check first: `workspace_list_dir path="repos"` → confirm with the user which repo they meant.
 
 ## Quick Reference
 
