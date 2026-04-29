@@ -1,8 +1,8 @@
 ---
 name: platform-management
-description: Complete platform operations skill — marketplace, agents, playbooks, heartbeats, board, scheduling, governance, LLMs, workspace setup, command centre, and all administrative tools
-version: "1.1.0"
-tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling]
+description: Complete platform operations skill — marketplace, agents, playbooks, heartbeats, board, scheduling, governance, LLMs, workspace setup, command centre, deliverables, assignments, social rendering, and all administrative tools
+version: "1.2.0"
+tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling, deliverables, assignments, social-rendering]
 category: agent-role
 tools:
   - name: platform_browse_marketplace_plugins
@@ -121,6 +121,8 @@ tools:
     description: Manually trigger a HARNESS optimization run
   - name: composio_execute
     description: Execute any Composio integration action
+  - name: workspace_html_to_png
+    description: Render any HTML page (file:// in-workspace or http(s)://) to a PNG inside the workspace; the PNG auto-registers as a deliverable (artifact_type=image) and surfaces in the Deliverables Gallery, Workspace Explorer, and Mission Outputs
 ---
 
 # Platform Management — Complete Workspace Operations
@@ -134,6 +136,24 @@ This skill teaches you HOW to use every operational tool on the platform. Follow
 ## 0. Command Centre — Mental Model & Glossary
 
 The Command Centre is the operational hub of the workspace. It organises work across distinct concepts. Understanding what each concept represents — and what it is NOT — prevents confusion.
+
+### Page IA — Use the Current Names
+
+The user-facing navigation has these pages. Always reference them by these names:
+
+| Current Page | What It Is | Old Names (do NOT use) |
+|---|---|---|
+| **Command Center** | Single pane of glass over the workforce — Summary, Board, Schedule, Memory, Missions, Blog tabs | ~~Activity~~ |
+| **Deliverables** | Every artifact agents produce — reports, code, documents, images, PNGs. Three views: Outputs (gallery), Explorer (file tree + editor + terminal), Activity (execution timeline) | ~~Workspace~~, ~~Workspace Files~~, ~~Outputs~~ |
+| **Assignments** | Where work gets handed to the crew — Playbooks (reusable routines), Missions (multi-step objectives), Plan (chat-mode plan-then-launch), Task (quick single action). Surfaces a Recommended carousel of marketplace + workspace items. | (new — no legacy name) |
+| **Chat** | Auto + agent conversations | — |
+| **Agent Management** | Roster, configuration, coordination, recipes | — |
+| **Tools & Integrations** | Composio + platform + internal tools | — |
+| **Knowledge Base** | Documents, databases, code-graph | ~~Documents~~ (the page label is "Knowledge Base") |
+| **Marketplace** | Catalog of agents, playbooks, skills, plugins, templates | — |
+| **Analytics** | Performance, costs, insights | — |
+
+When a user says "open Workspace" or "go to Activity", interpret it as **Deliverables** or **Command Center** respectively, and use the current name in your reply.
 
 ### Core Concepts
 
@@ -682,6 +702,50 @@ Returns step-by-step results, timing, and final status.
 | **Content Pipeline** | Research trends → Draft content → Review quality → Schedule publish | Daily 07:00 |
 | **Knowledge Audit** | List docs → Check freshness → Reprocess failures → Report gaps | Weekly Sunday |
 | **Sales Pipeline Review** | Pull CRM data → Score leads → Draft outreach → Update pipeline | Daily 08:00 |
+| **Daily Social Post** | Brief → Build payload → Brand voice QA → Render to 4 sizes → Approval → Post to LinkedIn/X/IG | 09:00 daily (configurable) |
+
+### 7g. Daily Social Post — Reference Pattern
+
+This is the canonical multi-channel social pattern. Use it as a template when designing any daily-social playbook.
+
+**Prerequisites (verify before designing):**
+- Skills installed: `social-template-payloads`, `html-to-png`, `social-brand-voice`, `social-production-workflow`, `linkedin-content-creator`, `twitter-engager`, `instagram-curator`
+- Composio connections: `LINKEDIN`, `TWITTER`, `INSTAGRAM` (warn the user about any missing OAuth)
+- Workspace has the `automatos-social` repo cloned at `repos/automatos-social/` (renderer entry: `repos/automatos-social/render/index.html`, schema: `repos/automatos-social/schema.json`)
+
+**Template & size catalog (defined in `schema.json` — never hardcode, always read):**
+- Templates: `title`, `definition`, `stats`, `quote`, `announcement` (5)
+- Sizes: `ig_post` (1080×1350), `ig_story` (1080×1920), `linkedin` (1200×628), `twitter` (1600×900) (4)
+
+**Step structure:**
+
+| # | Step | Skill / Tool | Output |
+|---|------|--------------|--------|
+| 1 | Source brief | content/research agent | `content/social/briefs/{YYYY-MM-DD}.md` |
+| 2 | Build payload | `social-template-payloads` | `content/social/payloads/{YYYY-MM-DD}_{template}.json` (fields **must** match `schema.json` exactly) |
+| 3 | Brand-voice QA | `social-brand-voice` | Pass-or-revise gate (blocks banned terms / off-brand tone) |
+| 4 | Render to 4 sizes | `html-to-png` → `workspace_html_to_png` (×4, parallel) | `deliverables/social/{YYYY-MM-DD}/{template}_{size}.png` |
+| 5 | Approval gate (optional) | `social-production-workflow` | Human approval task |
+| 6 | Post to channels (parallel) | `linkedin-content-creator` (LINKEDIN_CREATE_POST), `twitter-engager` (TWITTER_CREATE_TWEET), `instagram-curator` (Instagram feed/story) | Posted IDs + URLs |
+
+**Path conventions to bake into the playbook:**
+- PNGs: `deliverables/social/{YYYY-MM-DD}/{template}_{size}.png`
+- Briefs: `content/social/briefs/{YYYY-MM-DD}.md`
+- Payloads: `content/social/payloads/{YYYY-MM-DD}_{template}.json`
+
+**Decisions to confirm with the user before scheduling:**
+1. **Cadence** — daily 09:00 default? Days-of-week filter (e.g. weekdays only)?
+2. **Approval gate** — auto-publish, or always require human approval before Step 6?
+3. **Channels** — all three every day, or rotate (e.g. LinkedIn weekdays, IG Mon/Wed/Fri)?
+4. **Brand-voice fallback** — if `social-brand-voice` rejects, regenerate (loop back to Step 2) or skip the day?
+5. **Caption ownership** — does `social-template-payloads` produce the caption, or does each per-channel poster write its own platform-tailored caption? (Default: payload owns the visual + a generic caption; per-channel skills lightly adapt for length/hashtags.)
+
+**Rules Auto MUST follow when designing this playbook:**
+- `workspace_html_to_png` is the **only** renderer — never invent a substitute.
+- Payloads MUST match `schema.json` field names exactly — drift breaks rendering.
+- The `social-brand-voice` step is non-optional — it's the gate that prevents off-brand posts.
+- Never hardcode workspace IDs in the `file://` URL — the `html-to-png` skill knows how to construct paths against the worker's volume layout.
+- Detailed render protocol (URL building, viewport pinning, encoded params) lives in the `html-to-png` SKILL.md — assign that skill to the rendering agent and trust it. Don't duplicate the protocol in playbook step prompts.
 
 ---
 
@@ -997,6 +1061,42 @@ Agents can read, write, and manage files in the workspace repository.
 ```
 
 **Allowed git operations:** status, diff, add, commit, push, pull, log, branch, checkout, stash, show, blame, fetch.
+
+### 15c. HTML → PNG Renderer
+
+`workspace_html_to_png` runs a headless Chromium inside the worker, screenshots the page, and writes the PNG into the workspace. The output **auto-registers as a deliverable** (`artifact_type=image`), so it appears in the Deliverables Gallery, the Workspace Explorer, and any Mission Outputs view with no extra plumbing — you don't need a separate "register deliverable" step.
+
+```json
+{
+  "tool": "workspace_html_to_png",
+  "params": {
+    "url": "file:///workspaces/<id>/repos/automatos-social/render/index.html?template=title&headline=Hello",
+    "viewport": { "w": 1080, "h": 1350 },
+    "output_path": "deliverables/social/2026-04-29/title_ig_post.png",
+    "wait_for": "[data-render-ready='true']",
+    "full_page": false
+  }
+}
+```
+
+**Parameters:**
+- **`url`** — `file:///workspaces/<id>/...` (must resolve inside the workspace) or `http(s)://` for public pages. URL-encode field VALUES, never the leading `?` or `&`.
+- **`viewport`** — `{ "w": <px>, "h": <px> }`, exact pixel dimensions, max 4096 per side.
+- **`output_path`** — workspace-relative, must end in `.png`.
+- **`wait_for`** — CSS selector to await before screenshot. Default: `[data-render-ready='true']`. Templates that flip this attribute when ready guarantee a stable shot.
+- **`full_page`** — `true` to capture the whole scrollable page, `false` (default) for viewport-only.
+
+**Returns:** `{ "success": bool, "file_path": str, "file_size_bytes": int, "w": int, "h": int, "ms": int }`
+
+**Use cases:**
+- Social media cards (see Section 7g — assign the `html-to-png` skill to the rendering agent and let the skill handle the protocol).
+- Report → image conversion (e.g. capture a chart-heavy HTML page as a PNG to embed in a Slack post).
+- Site/landing screenshots for monitoring or audits.
+
+**Don't do this:**
+- Invent a different renderer — `workspace_html_to_png` is the only one.
+- Hardcode workspace IDs in URLs from a playbook step prompt — let the assigned skill construct the path.
+- Use `full_page: true` for fixed-size social cards — pin the viewport exactly to the size's pixels.
 
 ---
 
