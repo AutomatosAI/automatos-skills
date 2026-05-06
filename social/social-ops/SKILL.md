@@ -98,12 +98,20 @@ Next Action:       {what needs attention}
 
 ## Daily Post — Rendering Slides to Images
 
-Each day in weekly-facts.md has 4 slides. Render all 4 as carousel images + slide 1 as a story.
+Each day in weekly-facts.md has 4 slides. Render all 4 as images for the target platform.
+
+### Platform Sizes
+
+| Platform | Size key | Viewport | Extra |
+|----------|----------|----------|-------|
+| Instagram | `ig_post` | 1080×1350 | Also render slide 1 as `ig_story` (1080×1920) |
+| Twitter/X | `twitter` | 1600×900 | All 4 slides as tweet images |
+| LinkedIn | `linkedin` | 1200×628 | All 4 slides as post images |
 
 ### Render URL Pattern
 
 ```
-file:///workspaces/{WORKSPACE_ID}/repos/automatos-social/render/index.html?template={template}&size={size}&{fields}
+file:///workspaces/{WORKSPACE_ID}/repos/automatos-social/render/index.html?template={template}&size={size_key}&{fields}
 ```
 
 Field mapping per template type:
@@ -116,73 +124,36 @@ Field mapping per template type:
 | quote | `quote={quote}&accent={accent}&eyebrow={eyebrow}&attribution={attribution}&cta={cta}` |
 | announcement | `headline={headline}&subline={subline}&eyebrow={eyebrow}&status={status}&feature_1={heading}\|{body}&feature_2={heading}\|{body}&feature_3={heading}\|{body}&cta={cta}` |
 
-Size values: `ig_post` (1080×1350), `ig_story` (1080×1920), `linkedin` (1200×627), `twitter` (1200×675)
-
 ### Render Calls
 
-For each slide, call `workspace_html_to_png`:
+For each slide, call `workspace_html_to_png` with the platform's viewport:
 ```json
-{ "tool": "workspace_html_to_png", "params": { "url": "{render_url}", "viewport": { "w": 1080, "h": 1350 }, "output_path": "content/social/instagram/{slug}_slide{N}_ig_post.png" } }
-```
-
-Also render slide 1 as a story (1080×1920):
-```json
-{ "tool": "workspace_html_to_png", "params": { "url": "{render_url_with_size=ig_story}", "viewport": { "w": 1080, "h": 1920 }, "output_path": "content/social/instagram/{slug}_slide1_ig_story.png" } }
+{ "tool": "workspace_html_to_png", "params": { "url": "{render_url}", "viewport": { "w": 1080, "h": 1350 }, "output_path": "content/social/{platform}/{slug}_slide{N}.png" } }
 ```
 
 ### Post Package (post.json)
 
-After rendering, write the posting package:
+After rendering, write the posting package to `content/social/{platform}/post.json`:
 ```json
 {
-  "ig_user_id": "25592424610433588",
-  "carousel_images": [
-    "content/social/instagram/{slug}_slide1_ig_post.png",
-    "content/social/instagram/{slug}_slide2_ig_post.png",
-    "content/social/instagram/{slug}_slide3_ig_post.png",
-    "content/social/instagram/{slug}_slide4_ig_post.png"
+  "platform": "{instagram|twitter|linkedin}",
+  "images": [
+    "content/social/{platform}/{slug}_slide1.png",
+    "content/social/{platform}/{slug}_slide2.png",
+    "content/social/{platform}/{slug}_slide3.png",
+    "content/social/{platform}/{slug}_slide4.png"
   ],
-  "story_image": "content/social/instagram/{slug}_slide1_ig_story.png",
+  "story_image": "content/social/{platform}/{slug}_slide1_story.png",
   "caption": "{topic} — {day's subline}",
   "hashtags": "#automatos #aiagents #automation #orchestration #agentic",
-  "alt_text": "{descriptive alt text for the carousel}",
+  "alt_text": "{descriptive alt text}",
   "topic": "{topic}",
   "day": "{day}"
 }
 ```
 
-## Instagram Publishing — Carousel + Story
-
-ig_user_id: `25592424610433588` (Automatos Instagram Business Account)
-
-### Carousel publish sequence:
-
-1. **Get public URLs** — call `workspace_get_public_url` for each image in `carousel_images`
-2. **Create child containers** — for EACH carousel image:
-   ```json
-   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_POST_IG_USER_MEDIA", "params": { "ig_user_id": "25592424610433588", "image_url": "{public_url}", "is_carousel_item": true } } }
-   ```
-   Save the returned `id` from each call.
-3. **Create carousel container**:
-   ```json
-   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_CREATE_CAROUSEL_CONTAINER", "params": { "ig_user_id": "25592424610433588", "children": ["{child_id_1}", "{child_id_2}", "{child_id_3}", "{child_id_4}"], "caption": "{caption}\n\n{hashtags}", "alt_text": "{alt_text}" } } }
-   ```
-   Save the returned `id` — this is the `creation_id`.
-4. **Publish**:
-   ```json
-   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH", "params": { "ig_user_id": "25592424610433588", "creation_id": "{creation_id}" } } }
-   ```
-
-### Story publish sequence:
-
-1. Get public URL for the story image
-2. Create story container:
-   ```json
-   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_POST_IG_USER_MEDIA", "params": { "ig_user_id": "25592424610433588", "image_url": "{story_public_url}", "media_type": "STORIES" } } }
-   ```
-3. Publish with `INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH` using the returned `creation_id`
-
-Always pass `ig_user_id` to every Composio call. Always get public URLs first — Instagram cannot access workspace files.
+For Instagram, also render slide 1 as `ig_story` and include `story_image` in post.json.
+For Twitter/LinkedIn, `story_image` is not needed — omit it.
 
 ## Weekly Facts — Carousel Content Generation
 
