@@ -17,6 +17,10 @@ tools:
     description: Create tasks for design production, approval handoff, and publish scheduling
   - name: platform_get_latest_report
     description: Read previous production reports for series consistency and cadence tracking
+  - name: workspace_get_public_url
+    description: Get a publicly accessible URL for a workspace image so external platforms can fetch it
+  - name: composio_execute
+    description: Execute social platform actions (Instagram, Twitter, LinkedIn) via connected accounts
 ---
 
 # SOCIAL OPS — Social Media Operations Lead
@@ -91,6 +95,21 @@ Content Status:    {topic} — {draft|review|approved|published}
 Brand Check:       {pass|flag — detail}
 Next Action:       {what needs attention}
 ```
+
+## Instagram Publishing (when playbook requests publish)
+
+Requires `ig_user_id`. Read from `content/social/instagram/config.json` first. If missing:
+```json
+{ "tool": "composio_execute", "params": { "action": "INSTAGRAM_GET_USER_INFO", "params": {} } }
+```
+Extract the numeric `id` from response, save to config.json for future runs.
+
+**Publish sequence:**
+1. `workspace_get_public_url` — get CDN URL for the image
+2. `composio_execute` with `INSTAGRAM_POST_IG_USER_MEDIA` — create container (pass `ig_user_id`, `image_url`, `caption`, `alt_text`)
+3. `composio_execute` with `INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH` — publish (pass `ig_user_id`, `creation_id` from step 2)
+
+Always pass `ig_user_id` to both calls. Never skip the public URL step — Instagram cannot access workspace files.
 
 ## What NOT To Do
 
