@@ -111,6 +111,86 @@ Extract the numeric `id` from response, save to config.json for future runs.
 
 Always pass `ig_user_id` to both calls. Never skip the public URL step — Instagram cannot access workspace files.
 
+## Weekly Facts — Carousel Content Generation
+
+When generating weekly facts for Instagram carousels, write a YAML file to `content/social/weekly-facts.md`.
+
+### Structure Rules
+
+Every day has EXACTLY 4 slides, always in this order:
+1. **title** — the hook / cover slide
+2. **definition** — 3 explanation cards
+3. **stats** — 3 numbers + 2 supporting cards
+4. **quote** — pull-quote with one accented word
+
+No exceptions. No skipping slides. No reordering. Cover 7 days (Mon–Sun), each a different topic.
+
+### Field Constraints
+
+| Field | Rule |
+|-------|------|
+| headline | 2–4 lines separated by `\|`, ALL CAPS, max 10 chars per line, `@brick` suffix for orange |
+| card_N | `Heading\|Body` — heading ≤ 28 chars, body ≤ 160 chars |
+| stat_N | `Value\|Body` — value ≤ 4 chars (e.g. `10+`, `95%`), body ≤ 60 chars |
+| quote | One sentence, max 80 chars |
+| accent | One word from the quote to color orange |
+| subline | Max 140 chars |
+| eyebrow | Max 20 chars, ALL CAPS |
+
+### Example — One Complete Day
+
+```yaml
+- id: 2026-w19-mon
+  day: Monday
+  topic: Agents
+  slides:
+    - template: title
+      fields:
+        eyebrow: AI AGENTS 101
+        headline: WHAT IS|AN@brick|AGENT?
+        subline: Not just a chatbot. An agent plans, acts, observes, and loops — autonomously driving toward a goal.
+        cta: Swipe to learn →
+
+    - template: definition
+      fields:
+        eyebrow: THE BASICS
+        headline: AGENTS|ARE@brick|DIFFERENT.
+        card_1: Roles, not prompts|Each agent has a scoped role, permissions, and a skill set.
+        card_2: Tools, not tokens|Agents call APIs, read files, write code — not just generate text.
+        card_3: Loops, not turns|Plan → act → observe → repeat until the goal is met.
+        cta: What makes them work →
+
+    - template: stats
+      fields:
+        eyebrow: BY THE NUMBERS
+        headline: AGENTS|AT@brick|SCALE.
+        stat_1: 100+|Database tables powering agent state
+        stat_2: 30+|Skills available per agent
+        stat_3: 10×|Tool loop iterations per task
+        card_1: Production-grade|Not a demo — running real workloads today.
+        card_2: Skill routing|Tasks matched to agents by skill graph.
+        cta: See the architecture →
+
+    - template: quote
+      fields:
+        eyebrow: THE PRINCIPLE
+        quote: The model is the brain. The harness is everything else.
+        accent: harness
+        attribution: Automatos · core design principle
+        cta: Save this →
+```
+
+### File Header (include at top of every weekly-facts.md)
+
+```yaml
+- week_start: {YYYY-MM-DD of Monday}
+- owner: SOCIAL OPS
+- consumer_playbook: Automatos Instagram Carousel - Daily Fact Post
+- path: content/social/weekly-facts.md
+```
+
+Separate each day with `---`. Use only facts from `platform_query_graph` and `platform_graph_stats` — do NOT invent numbers. Round large numbers for stats (109 → 100+, 599 → 500+).
+
 ## What NOT To Do
 
 - Do not invent product capabilities or make unsupported claims.
@@ -118,3 +198,5 @@ Always pass `ig_user_id` to both calls. Never skip the public URL step — Insta
 - Do not rely on image generation for text-heavy branded carousels — prefer deterministic template systems.
 - Do not auto-publish content — default to approval-first unless explicitly configured otherwise.
 - Do not pad slides with filler — one clear idea per slide, concise enough for premium layouts.
+- Do not produce days with fewer than 4 slides or change the slide order (title → definition → stats → quote).
+- Do not use words longer than 10 characters in headlines — they overflow the renderer.
