@@ -96,20 +96,93 @@ Brand Check:       {pass|flag — detail}
 Next Action:       {what needs attention}
 ```
 
-## Instagram Publishing (when playbook requests publish)
+## Daily Post — Rendering Slides to Images
 
-Requires `ig_user_id`. Read from `content/social/instagram/config.json` first. If missing:
-```json
-{ "tool": "composio_execute", "params": { "action": "INSTAGRAM_GET_USER_INFO", "params": {} } }
+Each day in weekly-facts.md has 4 slides. Render all 4 as carousel images + slide 1 as a story.
+
+### Render URL Pattern
+
 ```
-Extract the numeric `id` from response, save to config.json for future runs.
+file:///workspaces/{WORKSPACE_ID}/repos/automatos-social/render/index.html?template={template}&size={size}&{fields}
+```
 
-**Publish sequence:**
-1. `workspace_get_public_url` — get CDN URL for the image
-2. `composio_execute` with `INSTAGRAM_POST_IG_USER_MEDIA` — create container (pass `ig_user_id`, `image_url`, `caption`, `alt_text`)
-3. `composio_execute` with `INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH` — publish (pass `ig_user_id`, `creation_id` from step 2)
+Field mapping per template type:
 
-Always pass `ig_user_id` to both calls. Never skip the public URL step — Instagram cannot access workspace files.
+| Template | URL params |
+|----------|-----------|
+| title | `headline={headline}&subline={subline}&eyebrow={eyebrow}&cta={cta}` |
+| definition | `headline={headline}&eyebrow={eyebrow}&card_1={heading}\|{body}&card_2={heading}\|{body}&card_3={heading}\|{body}&cta={cta}` |
+| stats | `headline={headline}&eyebrow={eyebrow}&stat_1={value}\|{body}&stat_2={value}\|{body}&stat_3={value}\|{body}&card_1={heading}\|{body}&card_2={heading}\|{body}&cta={cta}` |
+| quote | `quote={quote}&accent={accent}&eyebrow={eyebrow}&attribution={attribution}&cta={cta}` |
+| announcement | `headline={headline}&subline={subline}&eyebrow={eyebrow}&status={status}&feature_1={heading}\|{body}&feature_2={heading}\|{body}&feature_3={heading}\|{body}&cta={cta}` |
+
+Size values: `ig_post` (1080×1350), `ig_story` (1080×1920), `linkedin` (1200×627), `twitter` (1200×675)
+
+### Render Calls
+
+For each slide, call `workspace_html_to_png`:
+```json
+{ "tool": "workspace_html_to_png", "params": { "url": "{render_url}", "viewport": { "w": 1080, "h": 1350 }, "output_path": "content/social/instagram/{slug}_slide{N}_ig_post.png" } }
+```
+
+Also render slide 1 as a story (1080×1920):
+```json
+{ "tool": "workspace_html_to_png", "params": { "url": "{render_url_with_size=ig_story}", "viewport": { "w": 1080, "h": 1920 }, "output_path": "content/social/instagram/{slug}_slide1_ig_story.png" } }
+```
+
+### Post Package (post.json)
+
+After rendering, write the posting package:
+```json
+{
+  "ig_user_id": "25592424610433588",
+  "carousel_images": [
+    "content/social/instagram/{slug}_slide1_ig_post.png",
+    "content/social/instagram/{slug}_slide2_ig_post.png",
+    "content/social/instagram/{slug}_slide3_ig_post.png",
+    "content/social/instagram/{slug}_slide4_ig_post.png"
+  ],
+  "story_image": "content/social/instagram/{slug}_slide1_ig_story.png",
+  "caption": "{topic} — {day's subline}",
+  "hashtags": "#automatos #aiagents #automation #orchestration #agentic",
+  "alt_text": "{descriptive alt text for the carousel}",
+  "topic": "{topic}",
+  "day": "{day}"
+}
+```
+
+## Instagram Publishing — Carousel + Story
+
+ig_user_id: `25592424610433588` (Automatos Instagram Business Account)
+
+### Carousel publish sequence:
+
+1. **Get public URLs** — call `workspace_get_public_url` for each image in `carousel_images`
+2. **Create child containers** — for EACH carousel image:
+   ```json
+   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_POST_IG_USER_MEDIA", "params": { "ig_user_id": "25592424610433588", "image_url": "{public_url}", "is_carousel_item": true } } }
+   ```
+   Save the returned `id` from each call.
+3. **Create carousel container**:
+   ```json
+   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_CREATE_CAROUSEL_CONTAINER", "params": { "ig_user_id": "25592424610433588", "children": ["{child_id_1}", "{child_id_2}", "{child_id_3}", "{child_id_4}"], "caption": "{caption}\n\n{hashtags}", "alt_text": "{alt_text}" } } }
+   ```
+   Save the returned `id` — this is the `creation_id`.
+4. **Publish**:
+   ```json
+   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH", "params": { "ig_user_id": "25592424610433588", "creation_id": "{creation_id}" } } }
+   ```
+
+### Story publish sequence:
+
+1. Get public URL for the story image
+2. Create story container:
+   ```json
+   { "tool": "composio_execute", "params": { "action": "INSTAGRAM_POST_IG_USER_MEDIA", "params": { "ig_user_id": "25592424610433588", "image_url": "{story_public_url}", "media_type": "STORIES" } } }
+   ```
+3. Publish with `INSTAGRAM_POST_IG_USER_MEDIA_PUBLISH` using the returned `creation_id`
+
+Always pass `ig_user_id` to every Composio call. Always get public URLs first — Instagram cannot access workspace files.
 
 ## Weekly Facts — Carousel Content Generation
 
