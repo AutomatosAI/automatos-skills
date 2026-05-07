@@ -10,7 +10,7 @@ tools:
   - name: workspace_get_public_url
     description: Get a publicly accessible URL for a workspace image for LinkedIn media upload
   - name: composio_execute
-    description: Publish posts with images via LINKEDIN_CREATE_POST action
+    description: Publish posts with images via LINKEDIN_CREATE_LINKED_IN_POST action (two-step: upload images, then create post)
   - name: platform_submit_report
     description: Submit publish report after each cycle
 ---
@@ -57,14 +57,36 @@ For each image in the `images` array, call:
 ```
 Repeat for every slide. Collect all `public_url` values.
 
-### Step 3: Publish Image Post
+### Step 3: Upload Images to LinkedIn (one per image)
+
+LinkedIn requires a two-step image upload. For EACH image URL from Step 2, call:
 
 ```json
 {
   "tool": "composio_execute",
   "params": {
-    "action": "LINKEDIN_CREATE_POST",
+    "action": "LINKEDIN_INITIALIZE_IMAGE_UPLOAD",
     "params": {
+      "author": "urn:li:organization:108072660",
+      "image_url": "{public_url}"
+    }
+  }
+}
+```
+
+Each call returns an `image` URN (e.g. `urn:li:image:C4E...`). Collect ALL image URNs before proceeding.
+
+If any upload fails, retry once. If it still fails, skip that image and note it in the report.
+
+### Step 4: Create LinkedIn Post with Uploaded Images
+
+```json
+{
+  "tool": "composio_execute",
+  "params": {
+    "action": "LINKEDIN_CREATE_LINKED_IN_POST",
+    "params": {
+      "author": "urn:li:organization:108072660",
       "text": "{caption}\n\n{hashtags}",
       "media_urls": ["{public_url_1}", "{public_url_2}", "{public_url_3}", "{public_url_4}"]
     }
@@ -72,11 +94,15 @@ Repeat for every slide. Collect all `public_url` values.
 }
 ```
 
+**CRITICAL:** Always include `"author": "urn:li:organization:108072660"` — this posts to the Automatos company page, not your personal profile.
+
 The response returns the published post data. Save this for the report.
 
 LinkedIn favours longer-form captions than Twitter. The post.json caption can be used as-is — no character trimming needed. Keep hashtags to 3-5 relevant tags at the end.
 
-### Step 4: Submit Publish Report
+**Post ONE time only.** Do not create a story post — LinkedIn does not use stories. One image post per cycle, that's it.
+
+### Step 5: Submit Publish Report
 
 ```json
 {
@@ -116,3 +142,7 @@ Errors:            {none | detail}
 - Do not use more than 5 hashtags — keep them specific and relevant.
 - Do not pass workspace file paths directly to LinkedIn — always call `workspace_get_public_url` first.
 - Do not publish if post.json is missing or has no images — report the error instead.
+- Do not post as your personal profile — always use `author: urn:li:organization:108072660` (the Automatos company page).
+- Do not create a story post — LinkedIn does not have stories. One image post per run.
+- Do not create multiple posts — one post with all images, not one post per image.
+- Do not use `LINKEDIN_CREATE_POST` — the correct action is `LINKEDIN_CREATE_LINKED_IN_POST`.
