@@ -133,17 +133,19 @@ For each slide, call `workspace_html_to_png` with the platform's viewport:
 
 ### Post Package (post.json)
 
-After rendering, write the posting package to `content/social/{platform}/post.json`:
+After rendering, write the posting package to `content/social/{platform}/post.json`.
+
+**Instagram** (includes story_image):
 ```json
 {
-  "platform": "{instagram|twitter|linkedin}",
+  "platform": "instagram",
   "images": [
-    "content/social/{platform}/{slug}_slide1.png",
-    "content/social/{platform}/{slug}_slide2.png",
-    "content/social/{platform}/{slug}_slide3.png",
-    "content/social/{platform}/{slug}_slide4.png"
+    "content/social/instagram/{slug}_slide1.png",
+    "content/social/instagram/{slug}_slide2.png",
+    "content/social/instagram/{slug}_slide3.png",
+    "content/social/instagram/{slug}_slide4.png"
   ],
-  "story_image": "content/social/{platform}/{slug}_slide1_story.png",
+  "story_image": "content/social/instagram/{slug}_slide1_story.png",
   "caption": "{topic} — {day's subline}",
   "hashtags": "#automatos #aiagents #automation #orchestration #agentic",
   "alt_text": "{descriptive alt text}",
@@ -152,8 +154,26 @@ After rendering, write the posting package to `content/social/{platform}/post.js
 }
 ```
 
-For Instagram, also render slide 1 as `ig_story` and include `story_image` in post.json.
-For Twitter/LinkedIn, `story_image` is not needed — omit it.
+**Twitter / LinkedIn** (NO story_image — do not render or include it):
+```json
+{
+  "platform": "{twitter|linkedin}",
+  "images": [
+    "content/social/{platform}/{slug}_slide1.png",
+    "content/social/{platform}/{slug}_slide2.png",
+    "content/social/{platform}/{slug}_slide3.png",
+    "content/social/{platform}/{slug}_slide4.png"
+  ],
+  "caption": "{topic} — {day's subline}",
+  "hashtags": "#automatos #aiagents #automation #orchestration #agentic",
+  "alt_text": "{descriptive alt text}",
+  "topic": "{topic}",
+  "day": "{day}"
+}
+```
+
+For Instagram, also render slide 1 as `ig_story` (1080×1920) and include `story_image` in post.json.
+For Twitter/LinkedIn, do NOT render a story image and do NOT include `story_image` in post.json.
 
 ## Weekly Facts — Carousel Content Generation
 
