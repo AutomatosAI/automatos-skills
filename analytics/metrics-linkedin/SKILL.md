@@ -1,7 +1,7 @@
 ---
 name: metrics-linkedin
 description: Pulls LinkedIn organisation page metrics — followers, share stats, page views, top posts — and writes a daily snapshot for PULSE
-version: "1.1.0"
+version: "1.3.0"
 tags: [analytics, linkedin, social, metrics, pulse]
 category: agent-role
 tools:
@@ -18,66 +18,57 @@ tools:
   - name: scratchpad_read
     description: Read prior playbook context if needed
   - name: platform_search_memory
-    description: Optional — used only if `org_urn` is configured in workspace memory
+    description: Optional — used only if `linkedin_org_urn` is configured in workspace memory
 ---
 
 # METRICS — LINKEDIN
 
-You pull yesterday's LinkedIn **organisation page** numbers via the Composio LinkedIn toolkit. One run = one daily snapshot. **Read-only.**
+You pull yesterday's LinkedIn **organisation page** numbers via the Composio LinkedIn toolkit. **Read-only.**
 
-## CRITICAL
+## CRITICAL — Verified Slugs and Param Names (production logs 2026-05-08)
 
-- **Use `composio_execute` directly. Never wrap in `platform_execute`.**
-- **Auto-discover the organisation URN.** Do NOT abort if memory is empty — call `LINKEDIN_GET_COMPANY_INFO` to find orgs the auth user administers, then use that URN.
-- **This skill is for company / organisation pages only.** It will not work for personal profiles (the analytics endpoints require admin role on a Page).
-- **Window = yesterday.** Time intervals use unix-ms (not seconds). Yesterday 00:00 → today 00:00 UTC.
-- **Do not fabricate numbers.** Surface errors with HTTP status.
+Composio reports `has_schema: False` for these LinkedIn actions, meaning the agent has to know the param names from this skill — there's no schema to introspect. **Use these names exactly as written below.**
 
-## Composio Actions Used
+| Purpose | Action | Required params (verified) |
+|---|---|---|
+| Auth sanity check (gets the authed person's profile) | `LINKEDIN_GET_MY_INFO` | none |
+| Page-level engagement | `LINKEDIN_GET_SHARE_STATS` | `organizational_entity` (URN), `time_interval_unit` |
+| Page views & demographics | `LINKEDIN_GET_ORG_PAGE_STATS` | `organization` (URN), `time_interval_unit` |
+| Get a company by ID | `LINKEDIN_GET_COMPANY_INFO` | `company_id` (numeric) |
+| Follower count | `LINKEDIN_GET_NETWORK_SIZE` | `organization_id` (numeric), `edgeType` (enum) |
+| Reactions on a post | `LINKEDIN_LIST_REACTIONS` | `entity` (URN) |
 
-| Purpose | Action |
-|---|---|
-| Discover orgs the auth user administers | `LINKEDIN_GET_COMPANY_INFO` |
-| Page-level engagement (impressions, clicks, likes, comments, shares) | `LINKEDIN_GET_SHARE_STATS` |
-| Page views & demographic stats | `LINKEDIN_GET_ORG_PAGE_STATS` |
-| Follower count | `LINKEDIN_GET_NETWORK_SIZE` |
-| Reactions on a specific post | `LINKEDIN_LIST_REACTIONS` |
+> **Important parameter-name pitfalls observed in production**:
+> - `LINKEDIN_GET_SHARE_STATS` uses `organizational_entity`, NOT `organization_urn` (the agent burned a retry getting this wrong on its first call).
+> - `LINKEDIN_GET_ORG_PAGE_STATS` uses `organization` (just `organization`, not `organization_urn`).
+> - The time param is `time_interval_unit` (a single granularity enum like `DAY` / `MONTH`), NOT the `time_intervals` URN-format string from older docs.
+> - `LINKEDIN_GET_MY_INFO` is the production auth-check slug, NOT `LINKEDIN_GET_USER_PROFILE` (which is deprecated/legacy).
 
-> If a slug returns `400 Invalid action`, surface the slug attempted and stop — do NOT guess alternates.
+## Defaults
+
+- **Default org URN for the Automatos workspace:** `urn:li:organization:108072660` (sourced from production `linkedin-content-creator/SKILL.md`).
+- **Default org_id (numeric):** `108072660`.
+- **Default time window:** yesterday 00:00 → today 00:00 UTC.
 
 ## Workflow
 
-### Step 1 — Resolve organisation URN
+### Step 1 — Auth sanity check
+```json
+{ "tool": "composio_execute", "params": { "app_name": "LINKEDIN", "action": "LINKEDIN_GET_MY_INFO", "params": {} } }
+```
+On 401, abort with `critical` and `"LinkedIn connection invalid — reconnect via /workspace/connections"`. On success, capture the authed person's `localizedFirstName/LastName` for the report header (proves we're authenticated as expected).
 
-**1a. Try workspace memory first** (cheap, deterministic):
+### Step 2 — Resolve organisation URN
+**2a.** Check memory:
 ```json
 { "tool": "platform_search_memory", "params": { "query": "linkedin organisation urn" } }
 ```
-If a result like `urn:li:organization:1234567` is found, use it and skip to Step 2.
 
-**1b. Otherwise auto-discover via Composio:**
-```json
-{
-  "tool": "composio_execute",
-  "params": {
-    "app_name": "LINKEDIN",
-    "action": "LINKEDIN_GET_COMPANY_INFO",
-    "params": { "role": "ADMINISTRATOR", "state": "APPROVED", "count": 10 }
-  }
-}
-```
-The response is an ACL list. Each element has an `organizationalTarget` URN (`urn:li:organization:{id}`). Pick:
-- The **first** result if there's only one,
-- Otherwise the URN that matches a configured handle (search workspace memory for `linkedin org name` or `linkedin handle`),
-- Otherwise the first.
+**2b.** Otherwise use the Automatos default: `urn:li:organization:108072660`.
 
-If the call returns no admin orgs (`elements: []`), abort with status `critical` and notes `"auth user has no ADMINISTRATOR role on any LinkedIn organisation; analytics endpoints require admin"`.
+If a non-Automatos workspace and memory is empty, the auto-discovery path via `LINKEDIN_GET_COMPANY_INFO` is documented at the bottom of this file.
 
-Extract:
-- `org_urn` (full URN — used by `_GET_SHARE_STATS`, `_GET_ORG_PAGE_STATS`)
-- `org_id` (numeric only, strip the `urn:li:organization:` prefix — used by `_GET_NETWORK_SIZE`)
-
-### Step 2 — Follower count
+### Step 3 — Follower count
 ```json
 {
   "tool": "composio_execute",
@@ -85,17 +76,18 @@ Extract:
     "app_name": "LINKEDIN",
     "action": "LINKEDIN_GET_NETWORK_SIZE",
     "params": {
-      "organization_id": "{numeric org id}",
+      "organization_id": "108072660",
       "edgeType": "COMPANY_FOLLOWED_BY_MEMBER"
     }
   }
 }
 ```
-Capture `firstDegreeSize` — that's the follower count. The `edgeType` value uses underscores, NOT camelCase.
+- `organization_id` is the **numeric ID only**, not the URN.
+- `edgeType` uses underscores (`COMPANY_FOLLOWED_BY_MEMBER`).
 
-### Step 3 — Share stats (yesterday)
-Compute `start_ms` = yesterday 00:00 UTC unix-**milliseconds**, `end_ms` = today 00:00 UTC unix-**milliseconds**.
+Capture `firstDegreeSize` as the follower count. On `Invalid action`, set `followers=null` and add to NOTES.
 
+### Step 4 — Share stats (engagement)
 ```json
 {
   "tool": "composio_execute",
@@ -103,15 +95,19 @@ Compute `start_ms` = yesterday 00:00 UTC unix-**milliseconds**, `end_ms` = today
     "app_name": "LINKEDIN",
     "action": "LINKEDIN_GET_SHARE_STATS",
     "params": {
-      "organizational_entity": "{full org URN}",
-      "time_intervals": "(timeRange:(start:{start_ms},end:{end_ms}),timeGranularityType:DAY)"
+      "organizational_entity": "urn:li:organization:108072660",
+      "time_interval_unit": "DAY"
     }
   }
 }
 ```
-Returns aggregate `impressionCount`, `clickCount`, `likeCount`, `commentCount`, `shareCount`, `engagement` (rate). Keep the `time_intervals` URN-style format **exact** — no extra whitespace or quotes inside the parens.
+- The param is `organizational_entity` (full URN with `urn:li:organization:` prefix).
+- The param is `time_interval_unit`, value `"DAY"` (or `"MONTH"`).
+- **No `time_intervals` URN-format string** — that's an older API surface.
 
-### Step 4 — Page stats (page views, button clicks)
+Capture aggregate `impressionCount`, `clickCount`, `likeCount`, `commentCount`, `shareCount`, `engagement` (rate). Filter the response to yesterday's bucket if the action returns multiple days.
+
+### Step 5 — Page stats (page views)
 ```json
 {
   "tool": "composio_execute",
@@ -119,23 +115,21 @@ Returns aggregate `impressionCount`, `clickCount`, `likeCount`, `commentCount`, 
     "app_name": "LINKEDIN",
     "action": "LINKEDIN_GET_ORG_PAGE_STATS",
     "params": {
-      "organization": "{full org URN}",
-      "timeRangeStart": "{start_ms}",
-      "timeRangeEnd": "{end_ms}",
-      "timeGranularityType": "DAY"
+      "organization": "urn:li:organization:108072660",
+      "time_interval_unit": "DAY"
     }
   }
 }
 ```
-Capture `totalPageStatistics.views.allPageViews.pageViews` and `mobileCustomButtonClickCounts` / `desktopCustomButtonClickCounts`. Missing fields → 0.
+- The param is `organization` (full URN).
+- Same `time_interval_unit` enum.
 
-### Step 5 — Identify top posts (last 7 days)
-LinkedIn's API doesn't expose a clean "list our recent posts" via the analytics endpoints. The publishing agent (`linkedin-content-creator`) writes post URNs to memory after each post.
+Capture `totalPageStatistics.views.allPageViews.pageViews`, plus mobile/desktop button-click counts. Missing fields → 0.
 
+### Step 6 — Top posts (last 7 days, optional)
 ```json
 { "tool": "platform_search_memory", "params": { "query": "linkedin post urn last 7 days" } }
 ```
-
 For each URN returned (cap at 10):
 ```json
 {
@@ -147,21 +141,20 @@ For each URN returned (cap at 10):
   }
 }
 ```
-Sum reactions per post → top 3. If no URNs in memory, skip this step and add `"top_posts_unavailable": "no recent post URNs in memory"` to NOTES — this is not an error, the publisher just hasn't run yet.
+Sum reactions per post → top 3. If no URNs in memory, skip and add `"top_posts_unavailable": "no recent post URNs in memory"` to NOTES.
 
-### Step 6 — Compare with yesterday
+### Step 7 — Compare with yesterday
 ```json
 { "tool": "platform_get_latest_report", "params": { "agent_name": "PULSE" } }
 ```
-Deltas from `metrics.linkedin`: followers, impressions, engagements, page_views. First run → `null`.
+Deltas from `metrics.linkedin`: followers, impressions, engagements, page_views.
 
-### Step 7 — Persist + hand off
+### Step 8 — Persist + hand off
 
 **Playbook mode (default):**
 ```json
 { "tool": "scratchpad_write", "params": { "key": "linkedin_metrics", "value": "{full metrics JSON below}" } }
 ```
-Skip `platform_submit_report`.
 
 **Standalone mode:**
 ```json
@@ -174,7 +167,7 @@ Skip `platform_submit_report`.
     "title": "LinkedIn daily metrics",
     "report_type": "metrics_snapshot",
     "status": "ok | warning | critical",
-    "summary": "e.g. '+12 followers, 4.1k impressions, 1 post yesterday'",
+    "summary": "...",
     "metrics": "{see metrics JSON below}",
     "content": "{Output Format below}"
   }
@@ -185,12 +178,17 @@ Skip `platform_submit_report`.
 ```json
 {
   "platform": "linkedin",
-  "org_urn": "urn:li:organization:{id}",
-  "org_id": "{id}",
+  "org_urn": "urn:li:organization:108072660",
+  "org_id": "108072660",
+  "discovery": "memory | default",
+  "auth_user": "{first/last name from GET_MY_INFO}",
   "followers": 0,
   "followers_delta": 0,
   "impressions": 0,
   "clicks": 0,
+  "likes": 0,
+  "comments": 0,
+  "shares": 0,
   "engagements": 0,
   "engagement_rate_pct": 0,
   "page_views": 0,
@@ -198,7 +196,7 @@ Skip `platform_submit_report`.
   "top_post_url": "",
   "top_post_reactions": 0,
   "status": "success | error",
-  "notes": "discovery method (memory|auto), missing post URNs, etc."
+  "notes": "any 401/403, missing fields, slug failures"
 }
 ```
 
@@ -207,13 +205,14 @@ Skip `platform_submit_report`.
 ```
 LINKEDIN — {YYYY-MM-DD}
 ────────────────────────────
+Auth user:         {first} {last}
 Organisation:      {urn}
 Followers:         {n} ({+/-n} d/d)
 
 YESTERDAY (share stats)
   Impressions:     {n} ({+/-}% d/d)
   Clicks:          {n}
-  Reactions:       {n}
+  Likes:           {n}
   Comments:        {n}
   Shares:          {n}
   Engagement rate: {pct}%
@@ -228,23 +227,26 @@ TOP POSTS (last 7d, by reactions)
   3. ...
 
 NOTES
-  {discovery method, missing fields, etc.}
+  {discovery method, 401/403 hits, missing fields, etc.}
 ────────────────────────────
 ```
 
 ## Status Rules
 
-- **OK** — Org URN resolved (memory or auto-discovery), share + page + follower calls returned.
-- **WARNING** — Top-posts step skipped, followers dropped >1% d/d, OR impressions <50% of trailing-7-day average for an active page.
-- **CRITICAL** — Auto-discovery returned no admin orgs, auth revoked (401), OR all three analytics calls (share/page/network) returned 401/403.
+- **OK** — Auth check passed, share + page + network calls returned.
+- **WARNING** — Top-posts step skipped, one analytics endpoint missing/null, OR followers dropped >1% d/d.
+- **CRITICAL** — `LINKEDIN_GET_MY_INFO` returned 401, all three analytics actions returned `Invalid action` or 403 (auth user has no admin role).
 
 ## What NOT To Do
 
-- Do NOT abort if memory is empty — try `LINKEDIN_GET_COMPANY_INFO` first.
-- Do NOT use a person URN (`urn:li:person:`) — analytics endpoints require an organisation URN.
-- Do NOT pass the full URN to `_GET_NETWORK_SIZE`'s `organization_id` — it wants the numeric ID only.
+- Do NOT call `LINKEDIN_GET_USER_PROFILE` — use `LINKEDIN_GET_MY_INFO` (the production slug).
+- Do NOT pass `organization_urn` as the param name — `_GET_SHARE_STATS` wants `organizational_entity`, `_GET_ORG_PAGE_STATS` wants `organization`.
+- Do NOT pass a URN-format `time_intervals` string — both stat actions take `time_interval_unit` enum (DAY/MONTH).
+- Do NOT pass the full URN to `_GET_NETWORK_SIZE`'s `organization_id` — numeric only.
 - Do NOT post, comment, react, or message — read-only.
-- Do NOT loop over every post in the org's history — cap at the 10 most recent URNs from memory.
-- Do NOT handcraft `time_intervals` with extra whitespace or quotes — LinkedIn's URN parser is strict.
+- Do NOT loop over every post in history — cap at 10 most recent URNs from memory.
 - Do NOT store LinkedIn access tokens — Composio handles auth.
-- Do NOT guess action slugs if a call 400s. Report the slug attempted and the error.
+
+## Future — Auto-discovery for non-Automatos workspaces
+
+For workspaces other than Automatos where memory has no URN, an auto-discovery step using `LINKEDIN_GET_COMPANY_INFO` with `company_id` is possible. The skill currently relies on the hardcoded Automatos default to keep this version focused — extend later for multi-tenant.
