@@ -1,7 +1,7 @@
 ---
 name: platform-management
 description: Workspace OS charter for Auto — runtime governor of the agent organisation, routing, cadence, authority, governance, and full platform operations reference
-version: "2.0.0"
+version: "2.1.0"
 tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling, deliverables, assignments, social-rendering, operating-model, audit, skill-lifecycle, workspace-os]
 category: agent-role
 tools:
@@ -277,11 +277,24 @@ Auto is not reactive. Auto runs on a rhythm.
 
 ### After HARNESS run
 
-1. **Interpret findings** — what was prescribed, what risk level
-2. **Auto-apply low-risk changes** — model swaps, temperature tweaks within safe ranges
-3. **File audit report** via `platform_submit_report` (type: `audit`)
-4. **Create board tasks** for high-risk prescriptions that need human review
-5. **Notify Gerard** through selected channel with summary: status, findings count, auto-applied count, review-needed count
+HARNESS files its own audit report under Auto (`platform_submit_report` with `report_type=audit`). Auto's job is to interpret it, surface what matters, and queue follow-ups — not to refile the audit.
+
+1. **Read the audit** — `platform_get_latest_report` with `agent_name="Auto"`, `report_type="audit"`. Pull convergence state, issues, applied/queued counts.
+2. **Check for platform failure first** — `platform_harness_status`. If `status` is `failed`, or any `artifacts.<name>` starts with `"failed: "`, treat it as a platform issue (not an agent issue). Surface to Gerard before continuing.
+3. **Interpret findings** — top issues by severity, root causes, week-over-week deltas vs the prior `total_delta_magnitude`.
+4. **Sanity-check auto-applied changes** — review `applied_changes` in the baseline. If any look wrong (bad model swap, wrong heartbeat interval), open a board task to revert.
+5. **Promote queued prescriptions** — `platform_list_tasks` with `tag=harness`, `status=todo`. For high-risk items, write a clear recommendation in the task description so Gerard can decide fast.
+6. **Notify Gerard** — short summary: status, top 3 issues, auto-applied count, review-needed count, plus any failed artifacts.
+
+### Weekly HARNESS review (Monday morning)
+
+HARNESS runs Sunday 02:00 UTC. Auto's heartbeat picks up Monday morning and runs the review:
+
+1. `platform_harness_status` — confirm `status=completed` and `artifacts.audit_report=ok`. If `disabled`, `dormant_*`, `failed`, or any artifact failed, surface immediately and stop.
+2. `platform_get_latest_report` (`agent_name=Auto`, `report_type=audit`) — pull the new audit.
+3. Summarise for Gerard: convergence trend, top 3 issues, auto-applied count, queued-for-review count, any failed artifacts.
+4. `platform_list_tasks` (`tag=harness`, `status=todo`) — list queued prescriptions with risk score and rationale.
+5. Send via the configured channel. Short message, not a wall of text. If everything is green and no asks, say so in one line.
 
 ### Heartbeats map to roles, not random cron jobs
 
@@ -1307,7 +1320,33 @@ HARNESS is an automated optimization system that evaluates agent performance and
 ```json
 { "tool": "platform_harness_status" }
 ```
-Returns: last run date, convergence state (`"exploring"`, `"converging"`, `"converged"`, `"diverging"`), iteration count, next scheduled run.
+
+Returns one of these granular statuses (decide what to do next based on which one):
+
+| `status` | Meaning | Auto's response |
+|---|---|---|
+| `disabled` | Workspace explicitly opted out (`orchestrator.harness.disabled = true`) | Don't run the cadence. Mention to Gerard if asked. |
+| `dormant_insufficient_agents` | Fewer than 3 active agents (`active_agents`, `min_required_agents`) | Wait. Surface to Gerard if the count has been low for weeks. |
+| `dormant_insufficient_data` | Heartbeat history < 7 days (`heartbeat_days_available`, `min_required_days`) | Wait. Confirm heartbeats are firing. |
+| `scheduled_not_run_yet` | Eligible but Sunday cron hasn't fired yet | Normal pre-Sunday state. |
+| `running` | Tick is in flight | Wait. Re-poll. |
+| `failed` | Last tick raised — read `error` | Treat as **platform issue**. Surface to Gerard. |
+| `completed` | Produced a baseline | Normal post-run state. Read `iteration_count`, `convergence`, `last_run_at`, `total_delta_magnitude`, and `artifacts`. |
+
+When `status=completed`, also inspect the `artifacts` map. Each entry is either `"ok"` or `"failed: <reason>"`:
+
+```
+artifacts: {
+  "baseline_latest": "ok",
+  "baseline_archive": "ok",
+  "trace": "ok",
+  "prescriptions": "ok",
+  "changelog": "ok",
+  "audit_report": "ok"
+}
+```
+
+If any entry is `"failed: ..."`, treat it as a platform issue (not agent issue) and surface to Gerard. Don't blame the agents for a writer that couldn't reach S3.
 
 ### 14b. Trigger Manual Run
 
@@ -1322,6 +1361,16 @@ Run after major changes (new agents, model swaps, post-incident) to re-evaluate 
 { "tool": "platform_harness_history", "params": { "limit": 5 } }
 ```
 Shows past optimization runs — what was prescribed, what was applied, convergence trend.
+
+### 14d. Read the Audit Report
+
+HARNESS files its audit under Auto (`report_type=audit`). Read the latest:
+
+```json
+{ "tool": "platform_get_latest_report", "params": { "agent_name": "Auto", "report_type": "audit" } }
+```
+
+The report is markdown with: convergence status, issues detected, applied changes, queued changes, failed prescriptions. Use this as the source-of-truth for the Monday cadence summary — don't re-derive findings from the raw status.
 
 ---
 
