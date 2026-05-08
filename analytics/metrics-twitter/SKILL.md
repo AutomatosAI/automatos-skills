@@ -193,9 +193,7 @@ Pull `metrics.twitter` block. Deltas: followers, posts, impressions, engagements
 ```
 
 **Standalone mode:**
-```json
-{ "tool": "workspace_write_file", "params": { "path": "analytics/twitter/{YYYY-MM-DD}.json", "content": "{full raw bundle}" } }
-```
+Submit the report directly — do NOT write a JSON file to the workspace (paths get rooted inside the active repo).
 ```json
 {
   "tool": "platform_submit_report",

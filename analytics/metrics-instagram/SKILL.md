@@ -178,9 +178,7 @@ Pull the previous `metrics.instagram` block. Compute deltas: `followers Δ`, `vi
 Skip `platform_submit_report` — the synthesis step submits the consolidated report.
 
 **Standalone mode (when this skill is invoked directly):**
-```json
-{ "tool": "workspace_write_file", "params": { "path": "analytics/instagram/{YYYY-MM-DD}.json", "content": "{full raw bundle}" } }
-```
+Submit the report directly — do NOT write a JSON file to the workspace (paths get rooted inside the active repo).
 ```json
 {
   "tool": "platform_submit_report",

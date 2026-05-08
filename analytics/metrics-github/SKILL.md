@@ -186,9 +186,7 @@ Deltas from `metrics.github`: stars, forks, watchers, open_issues, open_prs. Fir
 Skip `platform_submit_report`.
 
 **Standalone mode:**
-```json
-{ "tool": "workspace_write_file", "params": { "path": "analytics/github/{owner-repo}/{YYYY-MM-DD}.json", "content": "{full raw bundle}" } }
-```
+Submit the report directly — do NOT write a JSON file to the workspace (paths get rooted inside the active repo).
 ```json
 {
   "tool": "platform_submit_report",
