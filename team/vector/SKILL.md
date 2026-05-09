@@ -77,34 +77,46 @@ If an agent has neither a recent report nor recent content, mark the input `unav
 
 ## Workflow
 
-### Step 1: Gather Inputs
+### Step 1: Gather Inputs (REQUIRED — do this BEFORE writing anything)
 
-**1a. Reports** — for agents that file via `platform_submit_report`:
+You MUST call each of the four tools below and base your brief on the
+results. A brief written without these tool calls is invalid. Every
+signal you cite must trace back to a tool result you produced in this
+turn — never to general knowledge or training data. Do not skip Step 1
+and proceed to Step 2.
+
+**1a. Reports** — call `platform_get_latest_report` for each:
 ```json
 { "tool": "platform_get_latest_report", "params": { "agent_name": "pulse" } }
 ```
-Repeat for: `ga-analyst`, `scout`, `social-publisher`.
+```json
+{ "tool": "platform_get_latest_report", "params": { "agent_name": "ga-analyst" } }
+```
 
-**1b. Content artefacts** — for agents that drop work into the workspace `content/` tree:
+(SCOUT and SOCIAL PUBLISHER reports aren't online yet — skip them. Add
+back when they exist.)
 
+**1b. Content artefacts** — list each directory then read the most recent file:
 ```json
 { "tool": "workspace_list_dir", "params": { "path": "content/blog" } }
 ```
-Then read the most recent 1–3 files:
 ```json
-{ "tool": "workspace_read_file", "params": { "path": "content/blog/<filename>" } }
+{ "tool": "workspace_list_dir", "params": { "path": "content/social" } }
 ```
 
-Repeat the list+read pattern for `content/social` (SOCIAL OPS), `content/images` (CANVAS), `content/community` (RALLY).
-
-If a directory doesn't exist or has no recent files, mark that input as `unavailable` and continue.
-
-**1c. Cross-check signal** — when a directory is empty or stale, run a quick grep across `content/` to see if the work landed under a different filename pattern:
+For each directory, identify the most recent 1–2 files and call
+`workspace_read_file` on them:
 ```json
-{ "tool": "workspace_grep", "params": { "pattern": "<agent-name or topic>", "path": "content" } }
+{ "tool": "workspace_read_file", "params": { "path": "content/blog/<actual-filename>" } }
 ```
 
-Do NOT stall the brief on partial inputs. The DATA QUALITY block in the output captures what was available.
+(`content/images` for CANVAS and `content/community` for RALLY don't
+exist yet — skip them. Add back when they exist.)
+
+**Handling empty results.** If a directory is empty or a report
+returns no row, mark that input as `unavailable` in the DATA QUALITY
+block and continue. Do not invent a signal to fill the gap. An empty
+input is a finding, not a problem.
 
 ### Step 2: Ground With Platform Data
 ```json
