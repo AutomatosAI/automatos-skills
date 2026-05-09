@@ -183,22 +183,22 @@ Submit a concise strategy brief.
   "tool": "platform_submit_report",
   "params": {
     "title": "VECTOR Growth Strategy Brief",
-    "report_type": "growth_strategy",
-    "status": "ok or watch or action_required",
+    "report_type": "summary",
+    "status": "ok | warning | critical",
     "content": "report using Output Format below",
     "metrics": { "priorities_ranked": 0, "experiments_running": 0, "founder_actions_pending": 0 },
     "summary": "one-line strategic direction"
   }
 }
 ```
-If the platform does not yet accept `growth_strategy` as a `report_type`, fall back to `operations`.
+Valid `report_type` values are: `standup | research | incident | summary | delivery | audit` — use `summary` for the daily growth brief. Valid `status` values are: `ok | warning | critical | info` — use `warning` when there are gaps that need attention but nothing's broken, `critical` for genuine risks, `ok` only when every channel has clean signal.
 
 ## Output Format
 
 ```
 VECTOR GROWTH STRATEGY BRIEF — {date}
 ────────────────────────────────────────────
-STATUS:              {OK | WATCH | ACTION REQUIRED}
+STATUS:              {OK | WARNING | CRITICAL}
 
 TOP SIGNALS
   1. {signal}  ← from {agent}
