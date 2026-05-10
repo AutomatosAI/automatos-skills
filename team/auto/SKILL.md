@@ -133,6 +133,16 @@ tools:
     description: Get HARNESS optimization loop state
   - name: platform_harness_trigger
     description: Manually trigger a HARNESS optimization run
+  - name: platform_get_auto_reporting_prefs
+    description: Read auto_reporting settings — primary/fallback channels, quiet hours, digest, routes
+  - name: platform_update_auto_reporting_prefs
+    description: Update auto_reporting settings (partial merge, requires confirmation)
+  - name: platform_send_notification
+    description: Fire a workspace event through the unified dispatcher (honours routes + quiet hours)
+  - name: platform_acknowledge_report
+    description: Stamp acknowledged_by/at on a report — drops it from the Decisions Needed queue
+  - name: platform_link_report_to_task
+    description: Append a board-task id to a report's linked_task_ids JSONB array
   - name: composio_execute
     description: Execute any Composio integration action
   - name: workspace_html_to_png
@@ -1301,12 +1311,70 @@ Every agent should submit reports after completing work. Reports create an audit
 
 **`status`:** `"ok"`, `"warning"`, `"critical"`, `"info"`.
 
+**Wave 1 — operating-signal fields.** A real report has *asks*, not just narrative. Use these structured fields so Auto can act on the report rather than reading prose:
+
+```json
+{
+  "recommendations": [
+    {"title": "Move PULSE to claude-haiku-4-5", "rationale": "70% cost cut, success_rate unchanged", "impact": "$120/mo saved"}
+  ],
+  "action_items": [
+    {"title": "Patch HARNESS report attribution", "owner": "Platform Engineering", "due": "2026-05-12", "priority": "high"}
+  ],
+  "linked_task_ids": [42, 87],
+  "requires_approval": true
+}
+```
+
+If `requires_approval=true`, the report lands in the Decisions Needed queue. Recommendations and action_items are first-class — Auto can promote them to board tasks via `platform_create_task` and link the resulting ticket back with `platform_link_report_to_task`.
+
 ### 12b. Read Previous Reports
 
 ```json
 { "tool": "platform_get_latest_report", "params": { "agent_name": "SENTINEL", "report_type": "standup" } }
 ```
 Use this for baseline comparison — compare current findings against the last report to identify trends.
+
+### 12c. Acknowledge a Report (Wave 3)
+
+```json
+{ "tool": "platform_acknowledge_report", "params": { "report_id": "<uuid>" } }
+```
+
+Stamps `acknowledged_by/at`. Use after Auto has summarised the report for Gerard and routed any action_items into board tasks — that drops the row from the Decisions Needed queue.
+
+### 12d. Link a Report to a Task (Wave 3)
+
+```json
+{ "tool": "platform_link_report_to_task", "params": { "report_id": "<uuid>", "task_id": 42 } }
+```
+
+Idempotent — won't duplicate. Keeps the trail intact: finding → ask → ticket.
+
+### 12e. Memory Provenance (Wave 3)
+
+When storing facts via `platform_store_memory`, always set `source_type` honestly:
+
+| `source_type` | When to use |
+|---|---|
+| `platform_verified` | I queried + confirmed via tools (highest confidence) |
+| `claude_reports` | The assistant claimed it, unverified |
+| `current_status` | Read from a live source, transient |
+| `inference` | Pattern-based guess (lowest confidence) |
+
+```json
+{
+  "tool": "platform_store_memory",
+  "params": {
+    "content": "HARNESS audit run #3 found 2 cost regressions",
+    "source_type": "platform_verified",
+    "confidence": 1.0,
+    "evidence_uri": "/harness/baselines/2026-05-08.json"
+  }
+}
+```
+
+Reading memory back: trust `platform_verified` first. Say "I think" or "from what I can see" when the source is `inference`.
 
 ---
 
@@ -1466,6 +1534,128 @@ Agents can read, write, and manage files in the workspace repository.
 - Invent a different renderer — `workspace_html_to_png` is the only one.
 - Hardcode workspace IDs in URLs from a playbook step prompt — let the assigned skill construct the path.
 - Use `full_page: true` for fixed-size social cards — pin the viewport exactly to the size's pixels.
+
+---
+
+## 17. Auto Reporting & Escalation (Wave 2 + 3)
+
+The platform now has a single configurable surface for *where* Auto reports
+to and *how loud* each event should be. Use it.
+
+### 17a. The auto_reporting Settings Shape
+
+`workspace.settings.auto_reporting` is a JSONB blob:
+
+```json
+{
+  "enabled": true,
+  "primary_channel": "telegram",
+  "fallback_channel": "in_app",
+  "quiet_hours": {
+    "enabled": true,
+    "start": "22:00",
+    "end": "08:00",
+    "timezone": "Europe/Dublin"
+  },
+  "digest_frequency": "immediate",
+  "digest_time": "09:00",
+  "routes": {
+    "agent_error": "primary",
+    "agent_error:urgent": "telegram",
+    "task_complete:info": "silent",
+    "report_submitted": "fallback"
+  }
+}
+```
+
+Read with `platform_get_auto_reporting_prefs`. Update partials with
+`platform_update_auto_reporting_prefs` (requires confirmation — always
+restate the change before persisting).
+
+### 17b. Routing Rules (in evaluation order)
+
+1. `routes["{event_type}:{severity}"]` — most specific
+2. `routes["{event_type}"]`
+3. `routes["{severity}"]` — severity-only fallback
+4. Otherwise: workspace `notification_preferences` (existing PRD-128 behaviour)
+
+`primary` and `fallback` resolve to the configured channels. `silent` drops
+the event. Quiet hours funnel non-urgent traffic to in_app — `urgent` and
+`security` always pass through.
+
+### 17c. Sending Notifications
+
+```json
+{
+  "tool": "platform_send_notification",
+  "params": {
+    "event_type": "agent_error",
+    "title": "HARNESS audit failed",
+    "message": "Run #4 errored: report_submitted handler missing _agent_id",
+    "severity": "urgent",
+    "status": "error",
+    "link_type": "report",
+    "link_id": "<run_id>"
+  }
+}
+```
+
+`event_type` is one of the 9 valid platform events. `severity` is one of
+`info` / `warning` / `urgent` / `security`. The dispatcher returns a
+`dispatched_to` list naming every destination that was actually fired.
+
+### 17d. Escalation Levels (L0-L4)
+
+A single ladder Auto uses to decide what flows where:
+
+| Level | Severity | Meaning | Default destination |
+|---|---|---|---|
+| L0 | info | FYI, no action expected | in_app / digest |
+| L1 | task | Needs work, no human decision | board task |
+| L2 | approval | Needs Gerard's call | primary channel + board |
+| L3 | urgent | Immediate attention | primary channel (bypass quiet hours) |
+| L4 | security | Stop and escalate — no jokes | primary + Gerard direct |
+
+Maps onto existing priorities: `critical/urgent` priority → L3 URGENT,
+`high` → L2 APPROVAL, `medium` → L1 TASK, `low` → L0 FYI. BudgetStatus
+`exceeded/critical` → L3, `warning` → L2.
+
+Set `escalation_level` (0-4) on board_tasks, agent_reports, or
+orchestration_runs to surface them in the right queue. Read it to triage
+quickly — one query, all three surfaces.
+
+### 17e. The Operating Pattern
+
+When Auto detects something worth surfacing:
+
+1. Classify the level (L0-L4) — explicit `escalation_level` beats
+   inference. Use the security flag, requires_approval, status, budget,
+   or priority signals in that order.
+2. If L0: skip — it's noise, log to memory only if novel.
+3. If L1: `platform_create_task` with `priority` mapped from the level.
+4. If L2: create the task **and** `platform_send_notification` with
+   `severity=approval`.
+5. If L3: notification first (`severity=urgent`), then task. Bypass
+   quiet hours.
+6. If L4: notification + task + memory + Gerard direct chat. No jokes.
+
+Auto-applied actions still file an `audit` report so Gerard can audit
+later. Anything Auto did unilaterally goes in `recommendations` /
+`action_items` of the report so the trail is intact.
+
+### 17f. Heartbeat Completion (Wave 1)
+
+Every heartbeat result now records `objective_met` (bool) and
+`evidence_ref` (file path / report id / task id). When reading
+heartbeats:
+
+- `objective_met=True` + `evidence_ref` → real work happened.
+- `objective_met=False` → fix the agent, not the report.
+- `objective_met=NULL` (silent success, no observable output) → ask
+  whether the heartbeat checklist actually has an objective worth
+  recording.
+
+This kills the "ran ≠ did the thing" class of nonsense.
 
 ---
 
