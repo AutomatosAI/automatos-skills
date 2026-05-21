@@ -133,16 +133,38 @@ tools:
     description: Get HARNESS optimization loop state
   - name: platform_harness_trigger
     description: Manually trigger a HARNESS optimization run
-  - name: platform_get_auto_reporting_prefs
-    description: Read auto_reporting settings — primary/fallback channels, quiet hours, digest, routes
-  - name: platform_update_auto_reporting_prefs
-    description: Update auto_reporting settings (partial merge, requires confirmation)
-  - name: platform_send_notification
-    description: Fire a workspace event through the unified dispatcher (honours routes + quiet hours)
+  - name: platform_harness_history
+    description: List past HARNESS runs with prescription/applied counts
+  - name: platform_get_workspace_errors
+    description: De-duplicated error signatures for THIS workspace (workspace-safe, server-side scoped)
+  - name: platform_get_my_slow_calls
+    description: Slowest LLM calls in this workspace with p95 latency + trace_ids to expand
+  - name: platform_get_cost_anomalies
+    description: Agents whose recent cost is far above their 7-day baseline (evidence-backed)
+  - name: platform_get_trace
+    description: Expand a single trace_id to see every log line + LLM call within that operation
+  - name: platform_query_loki_logs
+    description: Raw cross-service log search (Loki) — admin path for platform debugging across tenants
+  - name: platform_query_prometheus
+    description: Real-time system metrics (PromQL or presets — health, error_rate, latency, postgres, redis)
+  - name: platform_get_alerts
+    description: Infrastructure alerts (firing/resolved) from the alerts table
+  - name: platform_get_logs
+    description: Railway deploy logs for a specific service
+  - name: platform_list_services
+    description: List Railway services in the project
+  - name: platform_browse_reports
+    description: List agent reports with filters (agent, type, status, trigger, model, period)
   - name: platform_acknowledge_report
-    description: Stamp acknowledged_by/at on a report — drops it from the Decisions Needed queue
+    description: Mark a report as actioned (stamps acknowledged_by/at, drops from Decisions queue)
   - name: platform_link_report_to_task
-    description: Append a board-task id to a report's linked_task_ids JSONB array
+    description: Tie a report to a board task — preserves finding → ask → ticket trail
+  - name: platform_get_auto_reporting_prefs
+    description: Read this workspace's auto_reporting preferences (channels, quiet hours, routes)
+  - name: platform_update_auto_reporting_prefs
+    description: Update auto_reporting preferences (partial merge — confirm with Gerard before changing primary channel)
+  - name: platform_send_notification
+    description: Send a notification honouring auto_reporting routes, quiet hours, and channel prefs
   - name: composio_execute
     description: Execute any Composio integration action
   - name: workspace_html_to_png
@@ -396,6 +418,28 @@ Every incoming request gets routed to the right surface. Auto owns triage.
 - **"You want to discuss or control it"** → Auto chat
 
 When Auto creates a board task, it can also notify via the selected channel: "I created a task: 'Patch report attribution bug' in Platform / High Priority."
+
+### Observability Decision Layer — when to use which tool
+
+Every claim Auto raises about workspace health must be backed by reproducible evidence. There are two tiers of observability tools:
+
+**Workspace-safe (default — use these first):**
+- `platform_get_workspace_errors` — "what's failing?" — returns ranked error signatures with counts, scoped server-side to THIS workspace
+- `platform_get_my_slow_calls` — "what's slow?" — slowest LLM calls + workspace p95 + trace_ids to expand
+- `platform_get_cost_anomalies` — "who's spending more than usual?" — agents above their 7d baseline
+- `platform_get_trace` — "open the box on that report" — every log line + LLM call within a trace_id
+
+**Platform-admin (raw, cross-tenant — use sparingly, only for platform engineering):**
+- `platform_query_loki_logs` — raw LogQL over all services, no workspace filter
+- `platform_query_prometheus` — raw PromQL for infra metrics
+- `platform_get_alerts` — infrastructure-level alerts table
+- `platform_get_logs` / `platform_list_services` — Railway deploy logs
+
+**Rule of thumb:** if the question is about THIS workspace ("are my agents OK?", "what's slow for me?", "who's spending more?"), use the four workspace-safe tools. If the question is about the platform itself ("is the API healthy?", "is Postgres slow?", "are we paging anyone?"), use the admin tools.
+
+Every report Auto submits or recommends should carry an `evidence` array with the tool, query, window, sample_count, and top_signature returned by the platform tool — never invent these fields.
+
+When the user asks about a past incident or finding, pull `trace_id` from the report's metadata and run `platform_get_trace` to reconstruct it. Don't paraphrase from memory; show the trace.
 
 ---
 
