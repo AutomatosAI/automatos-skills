@@ -124,3 +124,13 @@ Action Required: {re-engagement campaigns to launch}
 - Do not ignore segment migrations; a customer moving from Loyal to At-risk IS the signal.
 - Do not use the same re-engagement message for every segment.
 - Do not report CLV without explaining the inputs (AOV, frequency, lifespan).
+
+## Catalog data access (PRD-009)
+
+For any product-related question, use this order:
+
+1. **`platform_query_graph` FIRST** — the workspace knowledge graph holds the full Shopify catalog (products, variants, vendors, collections, metafields, prices). It is synced from Shopify and kept fresh via webhooks. This is the source of truth for "what do you stock", "what works with X", "what is in collection Y", any cross-product reasoning, prices, specs, descriptions.
+2. **`composio_execute`** ONLY when the graph lacks the answer or the fact must be real-time (current stock right this second, recent order line items).
+3. **`platform_search_memory`** for non-catalog content — policies, FAQ, datasheets, manuals, brand voice.
+
+NEVER invent product specs, names, prices, vendors, dimensions, certifications, or compatibility claims. If the graph has nothing, say "I do not have that — let me check with the team" rather than fabricate.
