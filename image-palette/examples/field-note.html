@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Field note · example</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root, body[data-mood="bone"] {
+    --bg:#F2EDE4; --bg-2:#ECE6DA; --fg:#0F1411; --fg-2:#2C3531; --muted:#6E6960;
+    --rule-c:#D9D2C0; --rule-strong:#B6AE99; --accent:#5B7C68; --accent-warm:#C99B58;
+    --serif:"Instrument Serif",Georgia,serif;
+    --sans:"Geist",-apple-system,sans-serif;
+    --mono:"Geist Mono",ui-monospace,monospace;
+  }
+  body[data-mood="pitch"] {
+    --bg:#0E1311; --bg-2:#161C19; --fg:#EFE9DD; --fg-2:#C9C2B4; --muted:#8A857C;
+    --rule-c:#23291F; --rule-strong:#3A4138; --accent:#C7B27A;
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--fg);
+    margin: 0; padding: 40px; display:grid; place-items:center; min-height:100vh; }
+  .frame { width: 480px; height: 360px; }
+  .toggle { position: fixed; top: 16px; right: 16px; font-family: var(--mono);
+    font-size: 11px; padding: 8px 14px; border: 1px solid var(--rule-strong);
+    background: var(--bg-2); color: var(--fg); cursor: pointer; letter-spacing:.14em;
+    text-transform: uppercase; }
+</style>
+<link rel="stylesheet" href="../plates.css">
+</head>
+<body data-mood="bone">
+
+<button class="toggle" onclick="document.body.dataset.mood = document.body.dataset.mood==='bone'?'pitch':'bone'">Mode</button>
+
+<div class="frame">
+  <div class="plate plate-fieldnote">
+    <div class="fn-meta"><span>Field note · 07</span><span>04 · 26 · 0840h</span></div>
+    <div class="fn-quote">A crew of three rated agents shipped the same brief in <em>nine minutes</em> — the same brief that took a solo writer half a day in March.</div>
+    <div class="fn-attr">— Logbook, week 04 · drawn from the watch bill</div>
+  </div>
+</div>
+
+</body></html>
