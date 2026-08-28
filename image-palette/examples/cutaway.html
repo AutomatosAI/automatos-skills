@@ -1,0 +1,85 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Cutaway · example</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root, body[data-mood="bone"] {
+    --bg:#F2EDE4; --bg-2:#ECE6DA; --fg:#0F1411; --fg-2:#2C3531; --muted:#6E6960;
+    --rule-c:#D9D2C0; --rule-strong:#B6AE99; --accent:#5B7C68; --accent-warm:#C99B58;
+    --serif:"Instrument Serif",Georgia,serif;
+    --sans:"Geist",-apple-system,sans-serif;
+    --mono:"Geist Mono",ui-monospace,monospace;
+  }
+  body[data-mood="pitch"] {
+    --bg:#0E1311; --bg-2:#161C19; --fg:#EFE9DD; --fg-2:#C9C2B4; --muted:#8A857C;
+    --rule-c:#23291F; --rule-strong:#3A4138; --accent:#C7B27A;
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--fg);
+    margin: 0; padding: 40px; display:grid; place-items:center; min-height:100vh; }
+  .frame { width: 520px; height: 600px; }
+  .toggle { position: fixed; top: 16px; right: 16px; font-family: var(--mono);
+    font-size: 11px; padding: 8px 14px; border: 1px solid var(--rule-strong);
+    background: var(--bg-2); color: var(--fg); cursor: pointer; letter-spacing:.14em;
+    text-transform: uppercase; }
+</style>
+<link rel="stylesheet" href="../plates.css">
+</head>
+<body data-mood="bone">
+
+<button class="toggle" onclick="document.body.dataset.mood = document.body.dataset.mood==='bone'?'pitch':'bone'">Mode</button>
+
+<div class="frame">
+  <div class="plate plate-cutaway">
+    <div class="ct-title">Cutaway <small>Fig. 02 · Pipeline</small></div>
+    <div class="ct-sub"><span>System · Brief → Draft → Ship</span><span>Crew · 3 agents</span></div>
+
+    <div class="ct-stage">
+      <svg viewBox="0 0 480 320" fill="none" stroke-width="1.2">
+        <!-- frame -->
+        <rect x="20" y="40" width="440" height="240" stroke-dasharray="3 3" />
+
+        <!-- three stations -->
+        <g>
+          <circle cx="100" cy="160" r="44" />
+          <text x="100" y="164" text-anchor="middle" font-family="Instrument Serif" font-style="italic" font-size="18">Halberd</text>
+          <text x="100" y="225" text-anchor="middle" class="ink-muted" font-family="Geist Mono" font-size="9" letter-spacing="2">RESEARCH</text>
+        </g>
+        <g>
+          <circle cx="240" cy="160" r="44" />
+          <text x="240" y="164" text-anchor="middle" font-family="Instrument Serif" font-style="italic" font-size="18">Scribe</text>
+          <text x="240" y="225" text-anchor="middle" class="ink-muted" font-family="Geist Mono" font-size="9" letter-spacing="2">DRAFT</text>
+        </g>
+        <g>
+          <circle cx="380" cy="160" r="44" />
+          <text x="380" y="164" text-anchor="middle" font-family="Instrument Serif" font-style="italic" font-size="18">Sentinel</text>
+          <text x="380" y="225" text-anchor="middle" class="ink-muted" font-family="Geist Mono" font-size="9" letter-spacing="2">REVIEW</text>
+        </g>
+
+        <!-- connectors -->
+        <path d="M 144 160 L 196 160" />
+        <path d="M 196 160 l -6 -4 M 196 160 l -6 4" />
+        <path d="M 284 160 L 336 160" />
+        <path d="M 336 160 l -6 -4 M 336 160 l -6 4" />
+
+        <!-- callouts -->
+        <text x="40" y="60" font-family="Geist Mono" font-size="9" letter-spacing="2" class="ink-muted">A</text>
+        <line x1="50" y1="56" x2="98" y2="118" />
+        <text x="240" y="60" text-anchor="middle" font-family="Geist Mono" font-size="9" letter-spacing="2" class="ink-muted">B</text>
+        <line x1="240" y1="68" x2="240" y2="116" />
+        <text x="440" y="60" text-anchor="end" font-family="Geist Mono" font-size="9" letter-spacing="2" class="ink-muted">C</text>
+        <line x1="430" y1="56" x2="382" y2="118" />
+
+        <!-- legend strip -->
+        <text x="20" y="300" font-family="Geist Mono" font-size="8.5" letter-spacing="2" class="ink-muted">
+          A · BRIEF INTAKE      B · DRAFT PASS      C · POLICY CHECK
+        </text>
+      </svg>
+    </div>
+
+    <div class="ct-stamp">Cut on<b>04 · 26</b></div>
+    <div class="ct-foot"><span>Plate · 002</span><span>Drawn to scale</span></div>
+  </div>
+</div>
+
+</body></html>

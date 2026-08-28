@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Watch bill · example</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root, body[data-mood="bone"] {
+    --bg:#F2EDE4; --bg-2:#ECE6DA; --fg:#0F1411; --fg-2:#2C3531; --muted:#6E6960;
+    --rule-c:#D9D2C0; --rule-strong:#B6AE99; --accent:#5B7C68; --accent-warm:#C99B58;
+    --serif:"Instrument Serif",Georgia,serif;
+    --sans:"Geist",-apple-system,sans-serif;
+    --mono:"Geist Mono",ui-monospace,monospace;
+  }
+  body[data-mood="pitch"] {
+    --bg:#0E1311; --bg-2:#161C19; --fg:#EFE9DD; --fg-2:#C9C2B4; --muted:#8A857C;
+    --rule-c:#23291F; --rule-strong:#3A4138; --accent:#C7B27A;
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--fg);
+    margin: 0; padding: 40px; display:grid; place-items:center; min-height:100vh; }
+  .frame { width: 480px; height: 600px; }
+  .toggle { position: fixed; top: 16px; right: 16px; font-family: var(--mono);
+    font-size: 11px; padding: 8px 14px; border: 1px solid var(--rule-strong);
+    background: var(--bg-2); color: var(--fg); cursor: pointer; letter-spacing:.14em;
+    text-transform: uppercase; }
+</style>
+<link rel="stylesheet" href="../plates.css">
+</head>
+<body data-mood="bone">
+
+<button class="toggle" onclick="document.body.dataset.mood = document.body.dataset.mood==='bone'?'pitch':'bone'">Mode</button>
+
+<div class="frame">
+  <div class="plate plate-watchbill">
+    <div class="wb-title">Watch bill <small>Vol. 19 · Wk 04</small></div>
+    <div class="wb-sub"><span>Crew · 100+ rated</span><span>Drawn · K. Halford</span></div>
+    <table>
+      <thead><tr><th>No.</th><th>Name</th><th>Rating</th><th>Wtch</th></tr></thead>
+      <tbody>
+        <tr><td class="num">01</td><td class="name">Sentinel</td><td>Code Reviewer</td><td class="watch">A</td></tr>
+        <tr><td class="num">02</td><td class="name">Scribe</td><td>QA Engineer</td><td class="watch">A</td></tr>
+        <tr><td class="num">03</td><td class="name">Halberd</td><td>Researcher</td><td class="watch">B</td></tr>
+        <tr><td class="num">04</td><td class="name">Cooper</td><td>Shopify Ops</td><td class="watch">B</td></tr>
+        <tr><td class="num">05</td><td class="name">Marlow</td><td>Growth Strategy</td><td class="watch">C</td></tr>
+        <tr><td class="num">06</td><td class="name">Pemberton</td><td>Social Mgmt</td><td class="watch">C</td></tr>
+      </tbody>
+    </table>
+    <div class="wb-stamp">Mustered<b>04 · 26</b></div>
+    <div class="wb-foot"><span>Marketplace · 100+</span><span>Bring your own</span></div>
+  </div>
+</div>
+
+</body></html>
