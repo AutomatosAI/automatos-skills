@@ -2,7 +2,7 @@
 
 Agent skills for the [Automatos AI Platform](https://github.com/AutomatosAI/automatos-ai). Each skill is a `SKILL.md` file — instructions, process, formats, and guardrails — that gets injected into an agent's system prompt, teaching it **how** to do a job without the recipe prompt micromanaging every tool call.
 
-> **128 skills indexed.** Physically organised into 16 top-level group directories. Signature Automatos agents (SENTINEL, SCOUT, HARPER, ECHO, ATLAS, FORGE, ORACLE, RALLY, PATCHER) live under [`team/`](./team/).
+> **130 skills indexed.** Physically organised into 16 top-level group directories. Signature Automatos agents (SENTINEL, SCOUT, HARPER, ECHO, ATLAS, FORGE, ORACLE, RALLY, PATCHER, AUTOMATOS-DEV, DRG-DEV) live under [`team/`](./team/).
 
 ---
 
@@ -10,7 +10,7 @@ Agent skills for the [Automatos AI Platform](https://github.com/AutomatosAI/auto
 
 | Domain | Dir | Count |
 |---|---|---|
-| [The Automatos Team](#the-automatos-team) — signature named agents | [`team/`](./team/) | 9 |
+| [The Automatos Team](#the-automatos-team) — signature named agents | [`team/`](./team/) | 11 |
 | [Shopify & Commerce](#shopify--commerce) | [`shopify/`](./shopify/) | 21 |
 | [Software Engineering](#software-engineering) | [`engineering/`](./engineering/) | 11 |
 | [Quality, Security & Compliance](#quality-security--compliance) | [`quality/`](./quality/) | 9 |
@@ -26,7 +26,7 @@ Agent skills for the [Automatos AI Platform](https://github.com/AutomatosAI/auto
 | [Research & Knowledge](#research--knowledge) | [`research/`](./research/) | 2 |
 | [Support](#support) | [`support/`](./support/) | 1 |
 | [Integrations (Composio)](#integrations-composio) | [`integrations/`](./integrations/) | 8 |
-| **Total** | | **128** |
+| **Total** | | **130** |
 
 Cross-references (e.g. `scout` shows up under both Team and Sales; `platform-management` shows up under both Research and Platform/Meta) are listed once in their home directory and linked from the other section.
 
@@ -40,6 +40,8 @@ The signature named agents — each one has a persona, a beat, and a home in the
 |---|---|---|
 | **SENTINEL** | [`team/sentinel/`](./team/sentinel/) | Infrastructure watchdog — API health, error spikes, deploy status, cost anomalies. Heartbeat every 15 min. |
 | **PATCHER** | [`team/bug-fixer/`](./team/bug-fixer/) | End-to-end bug fixing — read ticket → find code → write failing test → minimal fix → verify → commit → draft PR. |
+| **AUTOMATOS-DEV** | [`team/automatos-dev/`](./team/automatos-dev/) | The platform's own engineer — works the tickets Automatos files against the Automatos repos as a Claude Code session: orient on the CLAUDE.md files → locate from evidence → branch → failing test → smallest fix → verify → commit signed → report. Never pushes; the manager integrates. |
+| **DRG-DEV** | [`team/drg-dev/`](./team/drg-dev/) | Senior developer for the Dr Green platform (NestJS API, admin panel, partner dApp, WordPress plugins) — works Automatos tickets as a Claude Code session in the Dr-Green-Cannexis workspace: orient → plan → build on a branch → verify through CI → report. Never pushes; the manager integrates. |
 | **SCOUT** | [`team/scout/`](./team/scout/) | Lead intelligence — qualify signups, score prospects, draft outreach, track pipeline. |
 | **HARPER** | [`team/harper/`](./team/harper/) | Content machine — turns platform activity into LinkedIn posts, changelogs, social content. |
 | **ECHO** | [`team/echo/`](./team/echo/) | Customer support — classify messages, auto-reply FAQs, create bug tickets, flag churn signals. |
