@@ -1,7 +1,7 @@
 ---
 name: platform-operations
 description: The tool-by-tool operations cookbook — exact JSON for marketplace installs, agent wiring, heartbeats, playbooks, board, scheduling, missions, governance, reports, HARNESS, workspace files, notifications, watches, and questions. LOAD THIS (platform_load_skill platform-operations) before executing any platform operation.
-version: "1.0.1"
+version: "1.0.2"
 tags: [platform, operations, cookbook, reference, on-demand]
 category: agent-role
 ---
@@ -88,7 +88,7 @@ When using platform tools, know which concept you're operating on:
 
 ## 1. Understanding the Three Layers
 
-There are three distinct layers. You MUST keep them separate in your thinking.
+There are three distinct layers; keep them separate.
 
 ### Layer 1: Marketplace (the catalog)
 The marketplace is a **catalog of available items** — agent templates, skills, plugins, tools, models. If something is in the marketplace, it is **possible to install**, not active. The marketplace is there to save time. It is NOT a limitation — if the user needs something that isn't in the marketplace, you build it custom.
@@ -245,16 +245,16 @@ No parameters needed. Returns what's already enabled so you don't duplicate.
 { "tool": "platform_install_skill", "params": { "skill_name": "seo-specialist" } }
 ```
 
-**Install an LLM model** (by OpenRouter model ID):
+**Install an LLM model** (by the OpenRouter model ID `platform_list_llms` returns):
 ```json
-{ "tool": "platform_install_model", "params": { "model_id": "anthropic/claude-sonnet-4-20250514" } }
+{ "tool": "platform_install_model", "params": { "model_id": "<model id from platform_list_llms>" } }
 ```
 
-**Decision framework for model selection:**
-- **Free tier** (`meta-llama/llama-4-scout`): Background tasks, drafts, low-stakes work
-- **Budget tier** (`deepseek/deepseek-chat`): Routine tasks, high volume, cost-sensitive
-- **Mid tier** (`openai/gpt-4.1`, `anthropic/claude-sonnet-4-20250514`): Core agents, quality work, tool use
-- **Premium tier** (`anthropic/claude-opus-4-20250514`): Strategy, complex reasoning, critical decisions
+**Decision framework for model selection** (pick the tier, then a model `platform_list_llms` prices in it):
+- **Free tier**: Background tasks, drafts, low-stakes work
+- **Budget tier**: Routine tasks, high volume, cost-sensitive
+- **Mid tier**: Core agents, quality work, tool use
+- **Premium tier**: Strategy, complex reasoning, critical decisions
 
 Use `platform_list_llms` to see all available models with capabilities and pricing:
 ```json
@@ -314,7 +314,7 @@ Returns full config: model, tools assigned, skills, persona prompt, heartbeat co
     "name": "<new helper's name>",
     "agent_type": "worker",
     "description": "Infrastructure watchdog — monitors health, errors, costs",
-    "model_id": "anthropic/claude-sonnet-4-20250514",
+    "model_id": "<model id from platform_list_llms>",
     "system_prompt": "You are <new helper's name>, the infrastructure watchdog for this workspace. Your job is to detect problems before users do. You monitor platform health, error spikes, and LLM cost anomalies. You are precise, factual, and never speculate. When you find an issue, you report it with evidence and severity.",
     "temperature": 0.3,
     "tags": ["devops", "monitoring", "engineering"],
@@ -388,7 +388,7 @@ Plugins bundle multiple tools. The plugin must be installed in the workspace fir
 
 To fully set up a new agent end-to-end:
 1. Install required skill: `platform_install_skill` → `"sentinel"`
-2. Install required model: `platform_install_model` → `"anthropic/claude-sonnet-4-20250514"`
+2. Install required model: `platform_install_model` → a model id from `platform_list_llms`
 3. Create the agent: `platform_create_agent` → name, persona, model, team, job_title
 4. Assign skill: `platform_assign_skill_to_agent` → `"sentinel"`
 5. Assign tools: `platform_assign_tool_to_agent` → `"COMPOSIO_SEARCH"` (if needed)
@@ -922,7 +922,7 @@ Use this for baseline comparison — compare current findings against the last r
 { "tool": "platform_acknowledge_report", "params": { "report_id": "<uuid>" } }
 ```
 
-Stamps `acknowledged_by/at`. Use after Auto has summarised the report for Gerard and routed any action_items into board tasks — that drops the row from the Decisions Needed queue.
+Stamps `acknowledged_by/at`. Use after Auto has summarised the report for the owner and routed any action_items into board tasks — that drops the row from the Decisions Needed queue.
 
 ### 12d. Link a Report to a Task (Wave 3)
 
@@ -1008,12 +1008,12 @@ Returns one of these granular statuses (decide what to do next based on which on
 
 | `status` | Meaning | Auto's response |
 |---|---|---|
-| `disabled` | Workspace explicitly opted out (`orchestrator.harness.disabled = true`) | Don't run the cadence. Mention to Gerard if asked. |
-| `dormant_insufficient_agents` | Fewer than 3 active agents (`active_agents`, `min_required_agents`) | Wait. Surface to Gerard if the count has been low for weeks. |
+| `disabled` | Workspace explicitly opted out (`orchestrator.harness.disabled = true`) | Don't run the cadence. Mention to the owner if asked. |
+| `dormant_insufficient_agents` | Fewer than 3 active agents (`active_agents`, `min_required_agents`) | Wait. Surface to the owner if the count has been low for weeks. |
 | `dormant_insufficient_data` | Heartbeat history < 7 days (`heartbeat_days_available`, `min_required_days`) | Wait. Confirm heartbeats are firing. |
 | `scheduled_not_run_yet` | Eligible but Sunday cron hasn't fired yet | Normal pre-Sunday state. |
 | `running` | Tick is in flight | Wait. Re-poll. |
-| `failed` | Last tick raised — read `error` | Treat as **platform issue**. Surface to Gerard. |
+| `failed` | Last tick raised — read `error` | Treat as **platform issue**. Surface to the owner. |
 | `completed` | Produced a baseline | Normal post-run state. Read `iteration_count`, `convergence`, `last_run_at`, `total_delta_magnitude`, and `artifacts`. |
 
 When `status=completed`, also inspect the `artifacts` map. Each entry is either `"ok"` or `"failed: <reason>"`:
@@ -1029,7 +1029,7 @@ artifacts: {
 }
 ```
 
-If any entry is `"failed: ..."`, treat it as a platform issue (not agent issue) and surface to Gerard. Don't blame the agents for a writer that couldn't reach S3.
+If any entry is `"failed: ..."`, treat it as a platform issue (not agent issue) and surface to the owner. Don't blame the agents for a writer that couldn't reach S3.
 
 ### 14b. Trigger Manual Run
 
@@ -1193,9 +1193,9 @@ A single ladder Auto uses to decide what flows where:
 |---|---|---|---|
 | L0 | info | FYI, no action expected | in_app / digest |
 | L1 | task | Needs work, no human decision | board task |
-| L2 | approval | Needs Gerard's call | primary channel + board |
+| L2 | approval | Needs the owner's call | primary channel + board |
 | L3 | urgent | Immediate attention | primary channel (bypass quiet hours) |
-| L4 | security | Stop and escalate — no jokes | primary + Gerard direct |
+| L4 | security | Stop and escalate — no jokes | primary + owner direct |
 
 Maps onto existing priorities: `critical/urgent` priority → L3 URGENT,
 `high` → L2 APPROVAL, `medium` → L1 TASK, `low` → L0 FYI. BudgetStatus
@@ -1218,9 +1218,9 @@ When Auto detects something worth surfacing:
    `severity=approval`.
 5. If L3: notification first (`severity=urgent`), then task. Bypass
    quiet hours.
-6. If L4: notification + task + memory + Gerard direct chat. No jokes.
+6. If L4: notification + task + memory + direct chat with the owner. No jokes.
 
-Auto-applied actions still file an `audit` report so Gerard can audit
+Auto-applied actions still file an `audit` report so the owner can audit
 later. Anything Auto did unilaterally goes in `recommendations` /
 `action_items` of the report so the trail is intact.
 
@@ -1262,8 +1262,8 @@ A question to the human is **task state, not a message**. The ask lives on the s
 ```
 
 - **Park, never wait.** The tool returns immediately; the subject goes `blocked`, the dispatch loop HOLDS it (no re-dispatch, no fail), and you move on to other work.
-- **Answers flow from anywhere:** the Questions tab, or Gerard's Telegram (reply-to the delivered question, or `/answer <id> …`). On answer the subject re-queues itself — do not manually restart it.
-- **Dismiss ≠ answered:** a dismissed ask leaves the subject blocked (the asker may re-ask); an explicit "use your judgment" answer is how Gerard unblocks without deciding.
+- **Answers flow from anywhere:** the Questions tab, or the owner's Telegram (reply-to the delivered question, or `/answer <id> …`). On answer the subject re-queues itself — do not manually restart it.
+- **Dismiss ≠ answered:** a dismissed ask leaves the subject blocked (the asker may re-ask); an explicit "use your judgment" answer is how the owner unblocks without deciding.
 - **Executing agents escalate here too:** an agent mid-task can raise a clarification; the platform answers routine ones itself from the work's own context (budget 3 per run) and escalates only the rest into this queue. (`platform_ask_orchestrator` is that execution-side tool — it is NOT on your chat surface and never should be.)
 - Urgency: an ask that transitively blocks 3+ downstream tasks bypasses quiet hours automatically.
 
