@@ -87,7 +87,7 @@ Read the home page, then the about page and one product page if they exist. Extr
     "logo_url": "https://{site}/logo.svg",
     "logo_mark_url": "https://{site}/apple-touch-icon.png",
     "social_handles": { "linkedin": "{handle}", "instagram": "{handle}" },
-    "voice": { "tone_words": ["warm", "plain-spoken", "expert"], "banned_phrases": ["revolutionary", "game-changing"] }
+    "voice": { "tone": ["warm", "plain-spoken", "expert"], "banned_phrases": ["revolutionary", "game-changing"] }
   }
 }
 ```
