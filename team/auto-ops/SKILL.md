@@ -1,7 +1,7 @@
 ---
 name: platform-operations
 description: The tool-by-tool operations cookbook — exact JSON for marketplace installs, agent wiring, heartbeats, playbooks, board, scheduling, missions, governance, reports, HARNESS, workspace files, notifications, watches, and questions. LOAD THIS (platform_load_skill platform-operations) before executing any platform operation.
-version: "1.0.0"
+version: "1.1.0"
 tags: [platform, operations, cookbook, reference, on-demand]
 category: agent-role
 ---
@@ -601,6 +601,8 @@ Returns step-by-step results, timing, and final status.
 | **Daily Social Post** | Brief → Build payload → Brand voice QA → Render to 4 sizes → Approval → Post to LinkedIn/X/IG | 09:00 daily (configurable) |
 
 ### 7g. Daily Social Post — Reference Pattern
+
+> **When Socials is on for the workspace (PRD-251), don't build this by hand.** Install the **Socials** package from the marketplace. Its Social Media Director and Brand Designer agents and its playbooks ("Weekly social posts", "Launch video", "Image carousel", "Brand kit from your website") replace this pattern. Posts are drafted with `platform_create_social_post`, rendered from the workspace's templates in its brand kit, approved by a person in the Socials tab, and published by the platform. A direct agent post call is refused in a Socials workspace. The pattern below is for workspaces without Socials.
 
 This is the canonical multi-channel social pattern. Use it as a template when designing any daily-social playbook.
 
