@@ -1,8 +1,11 @@
 <!--
-Source text for the knowledge document the site chat's support agent (support-responder)
-retrieves with platform_search_memory. The platform does not read this file for that: the
-document lives in the workspace that serves the site chat, and is replaced there by hand.
-Facts: the public facts sheet of 19 Oct 2026. Change this file and SKILL.md "Public facts" together.
+Source text for the knowledge document in the workspace that serves the site chat. The site
+bot answers from it through search_knowledge: site chats are widget turns, and widget turns
+don't render skills (automatos-ai F155), so this document and the agent's persona text
+(site-chat-persona.md) are what the site bot reads, not SKILL.md. The platform does not read
+this file: the document is replaced in that workspace by hand.
+Facts: the public facts sheet of 19 Oct 2026. Change this file, site-chat-persona.md and
+SKILL.md "Public facts" together.
 -->
 
 # Automatos: public facts for the site chat (19 October 2026)
@@ -10,6 +13,10 @@ Facts: the public facts sheet of 19 Oct 2026. Change this file and SKILL.md "Pub
 ## What is Automatos?
 
 Automatos AI is the brand. Automatos OS is the open-source engine. Automatos Studio is the hosted app. Automatos Academy (free training) and Automatos Markets (a read-only crypto market-intelligence product) are outlets of the same family. Automatos Markets is not "the marketplace": the marketplace is the catalogue of agents, Playbooks, skills, plugins and packages inside Studio. Automatos is built in Lisbon.
+
+## Where is Automatos based, and who backs it?
+
+Automatos AI is built in Lisbon. It is bootstrapped. To get in touch, use the contact form at https://automatos.app/contact. We reply within two working days.
 
 ## Is Auto a person?
 
@@ -19,7 +26,7 @@ No. Auto is Automatos's AI assistant. The site chat is an AI, and it says so.
 
 The local edition is free and open source (Apache 2.0), available today from GitHub: https://github.com/AutomatosAI/automatos-ai. It runs on your own keys or your Claude Code / CLI subscription.
 
-Hosted Studio opens as a beta in November 2026. Until then, sign-up is through the waitlist: https://studio.automatos.app/#waitlist. In short: on your own machine today, hosted from November 2026. Existing beta users can sign in.
+Hosted Studio opens as a beta in November 2026. Until then, sign-up is through the waitlist: https://studio.automatos.app/#waitlist. In short: on your own machine today, hosted from November 2026. Existing beta users sign in at https://studio.automatos.app/login.
 
 ## How much does Automatos cost?
 
@@ -27,14 +34,14 @@ The local edition is free and open source, on your own keys or your Claude Code 
 
 ## What is in each plan?
 
+New accounts start with a one-time 500-credit trial. A credit is one US cent of AI usage at Automatos prices. Beta pricing: not charged until billing opens. During the beta every plan runs on the trial and then on your own AI keys; monthly credits on Pro and Business start when billing opens. The local edition is free and open source (Apache 2.0), on your own keys or your Claude Code / CLI subscription.
+
 Every plan: branded documents and templates, socials on five networks, and the marketplace's packages, Playbooks and plugins.
 
 - **Own keys: $9 a month.** Everything in Pro, on your own Anthropic, OpenAI or OpenRouter keys. Your provider bills you for the AI.
 - **Pro: $29 a month.** 5 seats, 20 agents, 60 minutes of video render a month, with monthly AI credits included, so you don't need keys of your own.
 - **Business: $99 a month.** 25 seats, unlimited agents, 240 minutes of video render a month, voice, and a larger monthly credit allowance. By invite during the beta: contact Automatos.
 - **Enterprise: coming soon.** Contact Automatos.
-
-New accounts start with a one-time 500-credit trial. A credit is one US cent of AI usage at Automatos prices. Beta pricing: not charged until billing opens. During the beta every plan runs on the trial and then on your own AI keys; monthly credits on Pro and Business start when billing opens. The local edition is free and open source (Apache 2.0), on your own keys or your Claude Code / CLI subscription.
 
 ## What is the difference between Own keys and Pro?
 
@@ -50,11 +57,11 @@ Enterprise is coming soon. The same OS in your own cluster, with a licence, comm
 
 ## Do you have SOC 2, ISO 27001, SSO, SLAs or a dedicated cluster?
 
-Not today. SOC 2, ISO 27001, SSO (SAML, SCIM, OIDC), uptime or response SLAs, dedicated clusters, a DPA or BAA, EU residency pinning, 24/7 support and a named engineer or account manager are not available. A Helm chart exists and is tested in CI. If you need any of these, tell us what you need through the contact form.
+Not today. SOC 2, ISO 27001, SSO (SAML, SCIM, OIDC), uptime or response SLAs, dedicated clusters, a DPA or BAA, EU residency pinning or a Frankfurt region, 24/7 support, a named engineer or account manager, and a Compliance Pack are not available. A Helm chart exists and is tested in CI. If you need any of these, tell us what you need through the contact form.
 
 ## What is in the Studio marketplace?
 
-Hosted Studio's marketplace has 100+ ready-made agents, 20+ Playbooks, 400+ skills, 70+ plugins and 3 packages: Socials, Shopify Management and Shopify Development. The skills come from the open automatos-skills library (140 skills) plus Anthropic, Microsoft, Google and Shopify skill sets.
+Hosted Studio's marketplace has 100+ ready-made agents, 20+ Playbooks, 400+ skills, 70+ plugins and 3 packages: Socials, Shopify Management and Shopify Development. Among them is the open automatos-skills library of 140 skills.
 
 ## What agents do I start with?
 
@@ -88,7 +95,7 @@ Dates: Article 50 transparency has applied since 2 Aug 2026. 2 Dec 2026 is the A
 
 ## Where is my data stored?
 
-Documents and vectors are stored on AWS in Ireland (eu-west-1).
+Documents and vectors are stored on AWS in Ireland (eu-west-1). We don't state a region for anything else, and EU residency pinning isn't available today.
 
 ## When and where can I meet Automatos?
 
