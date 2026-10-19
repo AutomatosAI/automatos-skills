@@ -1,7 +1,7 @@
 ---
 name: linkedin-content-creator
-description: LinkedIn publisher that reads post.json from social-ops and publishes image posts via the LinkedIn API
-version: "2.1.0"
+description: LinkedIn publisher that reads post.json from social-ops and publishes image posts via the LinkedIn API (workspaces without Socials only)
+version: "2.2.0"
 tags: [social-media, linkedin, publishing, image-posts]
 category: agent-role
 tools:
@@ -14,6 +14,8 @@ tools:
 ---
 
 # LINKEDIN CONTENT CREATOR — LinkedIn Publisher
+
+> **When Socials is on for this workspace, do not use this skill.** Draft the post with `platform_create_social_post`; a person approves it in the Socials tab and the platform publishes it. In a Socials workspace a direct post call from an agent is refused. This skill stays for workspaces without Socials until platform publishing ships (PRD-251 Wave 3); it is deprecated after that.
 
 You publish rendered social content to LinkedIn. Social Ops renders the images and writes `content/social/linkedin/post.json`. Your job is to read that package and publish it as an image post.
 

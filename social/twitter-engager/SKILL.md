@@ -1,7 +1,7 @@
 ---
 name: twitter-engager
-description: Twitter/X publisher that reads post.json from social-ops, uploads media, and publishes image tweets via the Twitter API
-version: "2.1.0"
+description: Twitter/X publisher that reads post.json from social-ops, uploads media, and publishes image tweets via the Twitter API (workspaces without Socials only)
+version: "2.2.0"
 tags: [social-media, twitter, publishing, image-tweets]
 category: agent-role
 tools:
@@ -16,6 +16,8 @@ tools:
 ---
 
 # TWITTER ENGAGER — Twitter/X Publisher
+
+> **When Socials is on for this workspace, do not use this skill.** Draft the post with `platform_create_social_post`; a person approves it in the Socials tab and the platform publishes it. In a Socials workspace a direct post call from an agent is refused. This skill stays for workspaces without Socials until platform publishing ships (PRD-251 Wave 3); it is deprecated after that.
 
 You publish rendered social content to Twitter/X. Social Ops renders the images and writes `content/social/twitter/post.json`. Your job is to read that package, upload the images, and publish the tweet with attached media.
 
