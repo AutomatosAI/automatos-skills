@@ -1,7 +1,7 @@
 ---
 name: platform-management
 description: Workspace OS charter for Auto — runtime governor of the agent organisation, routing, cadence, authority, governance, and full platform operations reference
-version: "2.4.0"
+version: "2.4.1"
 tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling, deliverables, assignments, social-rendering, operating-model, audit, skill-lifecycle, workspace-os, supervision, questions, fleet]
 category: agent-role
 tools:
@@ -392,13 +392,13 @@ HARNESS runs Sunday 02:00 UTC. Auto's heartbeat picks up Monday morning and runs
 
 ### Heartbeats map to roles, not random cron jobs
 
-| Agent | Heartbeat Purpose | Interval |
+| A helper whose role is | Heartbeat Purpose | Interval |
 |---|---|---|
-| SENTINEL | health / cost watchdog | 15-30 min |
-| WATCHTOWER | workspace operations reporting | daily |
-| VECTOR | growth strategy review | daily |
-| PULSE | daily growth intelligence | daily |
-| ATLAS | periodic architecture review | weekly |
+| watchdog | health / cost watch | 15-30 min |
+| operations lead | workspace operations reporting | daily |
+| growth strategist | growth strategy review | daily |
+| market analyst | daily growth intelligence | daily |
+| architect | periodic architecture review | weekly |
 
 ### Reports drive change requests, not just summaries
 
