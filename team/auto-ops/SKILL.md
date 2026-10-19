@@ -1,7 +1,7 @@
 ---
 name: platform-operations
 description: The tool-by-tool operations cookbook — exact JSON for marketplace installs, agent wiring, heartbeats, playbooks, board, scheduling, missions, governance, reports, HARNESS, workspace files, notifications, watches, and questions. LOAD THIS (platform_load_skill platform-operations) before executing any platform operation.
-version: "1.0.0"
+version: "1.0.1"
 tags: [platform, operations, cookbook, reference, on-demand]
 category: agent-role
 ---
@@ -9,6 +9,8 @@ category: agent-role
 # Platform Operations Reference
 
 Sections 0–16 below are the tool-by-tool operational reference. Use them when executing the actions described in the charter above. Tool names, parameter formats, and workflows are precise — follow the patterns exactly.
+
+The names in the examples are not. `<helper's name>` stands for one of this workspace's own helpers, which `platform_list_agents` lists: never pass a name you haven't seen in this workspace.
 
 ---
 
@@ -299,7 +301,7 @@ Returns all agents with name, type, status, description. Filter: "active", "inac
 ### 4b. Get Agent Details
 
 ```json
-{ "tool": "platform_get_agent", "params": { "agent_name": "SENTINEL" } }
+{ "tool": "platform_get_agent", "params": { "agent_name": "<helper's name>" } }
 ```
 Returns full config: model, tools assigned, skills, persona prompt, heartbeat config, activity stats. Use `agent_id` or `agent_name`.
 
@@ -309,11 +311,11 @@ Returns full config: model, tools assigned, skills, persona prompt, heartbeat co
 {
   "tool": "platform_create_agent",
   "params": {
-    "name": "SENTINEL",
+    "name": "<new helper's name>",
     "agent_type": "worker",
     "description": "Infrastructure watchdog — monitors health, errors, costs",
     "model_id": "anthropic/claude-sonnet-4-20250514",
-    "system_prompt": "You are SENTINEL, the infrastructure watchdog for this workspace. Your job is to detect problems before users do. You monitor platform health, error spikes, and LLM cost anomalies. You are precise, factual, and never speculate. When you find an issue, you report it with evidence and severity.",
+    "system_prompt": "You are <new helper's name>, the infrastructure watchdog for this workspace. Your job is to detect problems before users do. You monitor platform health, error spikes, and LLM cost anomalies. You are precise, factual, and never speculate. When you find an issue, you report it with evidence and severity.",
     "temperature": 0.3,
     "tags": ["devops", "monitoring", "engineering"],
     "team": "Engineering & DevOps",
@@ -337,7 +339,7 @@ Returns full config: model, tools assigned, skills, persona prompt, heartbeat co
 {
   "tool": "platform_update_agent",
   "params": {
-    "agent_name": "SENTINEL",
+    "agent_name": "<helper's name>",
     "model_id": "deepseek/deepseek-chat",
     "temperature": 0.5,
     "status": "active"
@@ -362,7 +364,7 @@ After creating an agent, you must assign their tools. An agent without tools is 
 ### 5a. Assign a Composio Tool/App
 
 ```json
-{ "tool": "platform_assign_tool_to_agent", "params": { "agent_name": "SCOUT", "app_name": "GMAIL" } }
+{ "tool": "platform_assign_tool_to_agent", "params": { "agent_name": "<helper's name>", "app_name": "GMAIL" } }
 ```
 `app_name` is the Composio app identifier: `"GMAIL"`, `"GITHUB"`, `"SLACK"`, `"JIRA"`, `"HUBSPOT"`, `"SHOPIFY"`, `"COMPOSIO_SEARCH"`, etc. **Check `platform_list_connected_apps` first** — only assign apps with active OAuth.
 
@@ -371,14 +373,14 @@ After creating an agent, you must assign their tools. An agent without tools is 
 ### 5b. Assign a Skill
 
 ```json
-{ "tool": "platform_assign_skill_to_agent", "params": { "agent_name": "SENTINEL", "skill_name": "sentinel" } }
+{ "tool": "platform_assign_skill_to_agent", "params": { "agent_name": "<helper's name>", "skill_name": "sentinel" } }
 ```
 Skills give agents expertise — structured workflows, tool usage patterns, output formats. The skill must be installed in the workspace first (via `platform_install_skill`).
 
 ### 5c. Assign a Plugin
 
 ```json
-{ "tool": "platform_assign_plugin_to_agent", "params": { "agent_name": "SHOPIFY_OPS", "plugin_slug": "shopify-tools" } }
+{ "tool": "platform_assign_plugin_to_agent", "params": { "agent_name": "<helper's name>", "plugin_slug": "shopify-tools" } }
 ```
 Plugins bundle multiple tools. The plugin must be installed in the workspace first.
 
@@ -422,7 +424,7 @@ Heartbeats are scheduled cycles where an agent wakes up, checks its domain, and 
 {
   "tool": "platform_configure_agent_heartbeat",
   "params": {
-    "agent_name": "SENTINEL",
+    "agent_name": "<helper's name>",
     "enabled": true,
     "interval_minutes": 30,
     "prompt": "Run your full monitoring workflow: check platform health, scan for errors, audit LLM costs, compare against your last report, and submit findings.",
@@ -431,7 +433,7 @@ Heartbeats are scheduled cycles where an agent wakes up, checks its domain, and 
     "active_hours_end": "22:00",
     "proactive_level": "notify",
     "notification_channel": "in_app",
-    "checklist": "- Check platform health\n- Scan error logs (15min window)\n- Audit LLM cost vs 7-day average\n- Compare against previous SENTINEL report\n- Submit heartbeat report"
+    "checklist": "- Check platform health\n- Scan error logs (15min window)\n- Audit LLM cost vs 7-day average\n- Compare against your previous report\n- Submit heartbeat report"
   }
 }
 ```
@@ -682,7 +684,7 @@ The board is NOT an event log (that's the Activity Feed) and NOT a schedule (tha
     "title": "Audit Q2 marketing spend",
     "description": "Pull all marketing-related LLM costs for Q2, compare against budget, flag any overspend.",
     "priority": "medium",
-    "assigned_agent_name": "ATLAS",
+    "assigned_agent_name": "<helper's name>",
     "tags": ["finance", "audit", "q2"],
     "status": "assigned"
   }
@@ -705,7 +707,7 @@ Returns counts by status and priority, busiest agents, and recent completions. U
 ### 8c. Assign and Move Tasks
 
 ```json
-{ "tool": "platform_assign_task", "params": { "task_id": 42, "agent_name": "SENTINEL" } }
+{ "tool": "platform_assign_task", "params": { "task_id": 42, "agent_name": "<helper's name>" } }
 { "tool": "platform_update_task_status", "params": { "task_id": 42, "status": "in_progress" } }
 ```
 **Important:** Moving a task to `"in_progress"` triggers the assigned agent to execute immediately. This is how you dispatch work.
@@ -748,7 +750,7 @@ Then create child tasks with `parent_task_id` pointing to the objective.
     "task_type": "one_shot",
     "description": "Generate monthly KPI report for March",
     "schedule": "2026-04-01T09:00:00Z",
-    "target_agent_name": "ATLAS"
+    "target_agent_name": "<helper's name>"
   }
 }
 ```
@@ -761,7 +763,7 @@ Then create child tasks with `parent_task_id` pointing to the objective.
     "task_type": "recurring",
     "description": "Weekly pipeline review — score leads, update CRM, draft outreach",
     "schedule": "0 8 * * 1",
-    "target_agent_name": "SCOUT",
+    "target_agent_name": "<helper's name>",
     "max_runs": 52
   }
 }
@@ -871,7 +873,7 @@ Every agent should submit reports after completing work. Reports create an audit
 {
   "tool": "platform_submit_report",
   "params": {
-    "title": "SENTINEL Heartbeat — 2026-04-12 14:00",
+    "title": "<helper's name> Heartbeat — 2026-04-12 14:00",
     "content": "## Platform Status: HEALTHY\n\n### Services\nAll 18 services responding normally...\n\n### Errors\n3 errors in last 15min (baseline: 5) — below threshold...\n\n### LLM Costs\nToday: $4.12 (7-day avg: $5.58) — 26% below average...",
     "report_type": "standup",
     "status": "ok",
@@ -895,7 +897,7 @@ Every agent should submit reports after completing work. Reports create an audit
 ```json
 {
   "recommendations": [
-    {"title": "Move PULSE to claude-haiku-4-5", "rationale": "70% cost cut, success_rate unchanged", "impact": "$120/mo saved"}
+    {"title": "Move <helper's name> to claude-haiku-4-5", "rationale": "70% cost cut, success_rate unchanged", "impact": "$120/mo saved"}
   ],
   "action_items": [
     {"title": "Patch HARNESS report attribution", "owner": "Platform Engineering", "due": "2026-05-12", "priority": "high"}
@@ -910,7 +912,7 @@ If `requires_approval=true`, the report lands in the Decisions Needed queue. Rec
 ### 12b. Read Previous Reports
 
 ```json
-{ "tool": "platform_get_latest_report", "params": { "agent_name": "SENTINEL", "report_type": "standup" } }
+{ "tool": "platform_get_latest_report", "params": { "agent_name": "<helper's name>", "report_type": "standup" } }
 ```
 Use this for baseline comparison — compare current findings against the last report to identify trends.
 
