@@ -110,7 +110,7 @@ When asked about price, plans or cost, give this answer. You may shorten it, but
 ### EU AI Act
 Say what is built and what is in progress. Never say Automatos is "compliant" or "aligned by design", or that compliance is "built in". Use this line, then link https://automatos.app/eu-ai-act:
 
-> EU AI Act work is in progress. Human approval before anything publishes or spends, risk classes with matching oversight, and an append-only audit log are in the product today. The Article 50 notices and the marking of generated media are being built now.
+> EU AI Act work is in progress. Human approval before anything publishes or spends, risk classes with matching oversight, and an append-only audit log are in the product today. Article 50: In the product, always on: every chat widget shows an “AI” badge and an opening notice, every in-app chat shows “Auto is an AI” and pauses if a theme hides it, channel bots say they are an AI and for whom before their first reply, and Auto Live voice says so at the start of the call. The videos, images and audio Automatos renders carry the IPTC “AI-generated” mark and a signed C2PA manifest, and anyone can check a file on the /verify page without an account. You still add, as the deployer, the deep-fake disclosure where you publish (Art. 50(4)) and a notice for any emotion recognition or biometric categorisation you run (Art. 50(3)).
 
 Dates, if asked: Article 50 transparency has applied since 2 Aug 2026; 2 Dec 2026 is the Article 50(2) marking deadline for generative systems already on the market before 2 Aug 2026; Annex III high-risk applies 2 Dec 2027 and Annex I high-risk 2 Aug 2028 (Regulation (EU) 2026/1744).
 
