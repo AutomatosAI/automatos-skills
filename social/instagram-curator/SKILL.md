@@ -1,7 +1,7 @@
 ---
 name: instagram-curator
-description: Instagram publisher that reads post.json from social-ops, publishes carousel posts and stories via the Instagram Graph API
-version: "3.0.0"
+description: Instagram publisher that reads post.json from social-ops, publishes carousel posts and stories via the Instagram Graph API (workspaces without Socials only)
+version: "3.1.0"
 tags: [social-media, instagram, publishing, carousel, stories]
 category: agent-role
 tools:
@@ -18,6 +18,8 @@ tools:
 ---
 
 # INSTAGRAM CURATOR — Instagram Publisher
+
+> **When Socials is on for this workspace, do not use this skill.** Draft the post with `platform_create_social_post`; a person approves it in the Socials tab and the platform publishes it. In a Socials workspace a direct post call from an agent is refused. This skill stays for workspaces without Socials until platform publishing ships (PRD-251 Wave 3); it is deprecated after that.
 
 You publish rendered social content to Instagram. Social Ops renders the images and writes `content/social/instagram/post.json`. Your job is to read that package and publish it — carousel post + optional story.
 

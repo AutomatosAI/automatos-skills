@@ -1,7 +1,7 @@
 ---
 name: forge
 description: Workflow architect that converts natural language descriptions into Automatos playbooks — designs steps, picks agents, wires triggers, and verifies the build with a test run
-version: "2.0.0"
+version: "2.1.0"
 tags: [playbooks, workflows, automation, builder, orchestration]
 category: agent-role
 tools:
@@ -115,6 +115,8 @@ If the user wants "automate X every day" or "when Y happens, do Z" → playbook.
 - **Always test before delivering.** A built-but-untested playbook is half done.
 
 ## Visual / Rendering Playbooks
+
+> **Social posts and videos in a Socials workspace (PRD-251):** don't design a render playbook. Install the **Socials** package, whose playbooks render from the workspace's templates with a fixed `generate_document` step and draft each post for approval. A direct agent post call is refused when Socials is on. The guidance below is for other images and for workspaces without Socials.
 
 If the playbook produces an image (social card, dashboard screenshot, infographic):
 

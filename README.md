@@ -352,4 +352,4 @@ The skill owns the mechanical detail; the recipe owns the intent.
 
 ## License
 
-Internal — AutomatosAI
+Apache License 2.0. See [LICENSE](./LICENSE).
