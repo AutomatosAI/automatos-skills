@@ -1,7 +1,7 @@
 ---
 name: platform-operations
 description: The tool-by-tool operations cookbook — exact JSON for marketplace installs, agent wiring, heartbeats, playbooks, board, scheduling, missions, governance, reports, HARNESS, workspace files, notifications, watches, and questions. LOAD THIS (platform_load_skill platform-operations) before executing any platform operation.
-version: "1.1.0"
+version: "1.1.1"
 tags: [platform, operations, cookbook, reference, on-demand]
 category: agent-role
 ---
@@ -31,7 +31,7 @@ The user-facing navigation has these pages. Always reference them by these names
 | **Agent Management** | Roster, org chart, configuration, skills — plus the live **Fleet** tab (per-agent working/idle/blocked, queue, 24h cost) | — |
 | **Tools & Integrations** | Composio + platform + internal tools | — |
 | **Knowledge Base** | Documents, databases, code-graph | ~~Documents~~ (the page label is "Knowledge Base") |
-| **Marketplace** | Catalog of agents, playbooks, skills, plugins, templates | — |
+| **Marketplace** | Catalog of themes, packages, applications, agents, playbooks, LLMs and capabilities (plugins, skills). Opens on its **Themes** tab (§20) | — |
 | **Analytics** | Performance, costs, insights | — |
 
 When a user says "open Workspace" or "go to Activity", interpret it as **Deliverables** or **Command Center** respectively, and use the current name in your reply.
@@ -88,7 +88,7 @@ When using platform tools, know which concept you're operating on:
 
 ## 1. Understanding the Three Layers
 
-There are three distinct layers. You MUST keep them separate in your thinking.
+There are three distinct layers; keep them separate.
 
 ### Layer 1: Marketplace (the catalog)
 The marketplace is a **catalog of available items** — agent templates, skills, plugins, tools, models. If something is in the marketplace, it is **possible to install**, not active. The marketplace is there to save time. It is NOT a limitation — if the user needs something that isn't in the marketplace, you build it custom.
@@ -245,16 +245,16 @@ No parameters needed. Returns what's already enabled so you don't duplicate.
 { "tool": "platform_install_skill", "params": { "skill_name": "seo-specialist" } }
 ```
 
-**Install an LLM model** (by OpenRouter model ID):
+**Install an LLM model** (by the OpenRouter model ID `platform_list_llms` returns):
 ```json
-{ "tool": "platform_install_model", "params": { "model_id": "anthropic/claude-sonnet-4-20250514" } }
+{ "tool": "platform_install_model", "params": { "model_id": "<model id from platform_list_llms>" } }
 ```
 
-**Decision framework for model selection:**
-- **Free tier** (`meta-llama/llama-4-scout`): Background tasks, drafts, low-stakes work
-- **Budget tier** (`deepseek/deepseek-chat`): Routine tasks, high volume, cost-sensitive
-- **Mid tier** (`openai/gpt-4.1`, `anthropic/claude-sonnet-4-20250514`): Core agents, quality work, tool use
-- **Premium tier** (`anthropic/claude-opus-4-20250514`): Strategy, complex reasoning, critical decisions
+**Decision framework for model selection** (pick the tier, then a model `platform_list_llms` prices in it):
+- **Free tier**: Background tasks, drafts, low-stakes work
+- **Budget tier**: Routine tasks, high volume, cost-sensitive
+- **Mid tier**: Core agents, quality work, tool use
+- **Premium tier**: Strategy, complex reasoning, critical decisions
 
 Use `platform_list_llms` to see all available models with capabilities and pricing:
 ```json
@@ -314,7 +314,7 @@ Returns full config: model, tools assigned, skills, persona prompt, heartbeat co
     "name": "<new helper's name>",
     "agent_type": "worker",
     "description": "Infrastructure watchdog — monitors health, errors, costs",
-    "model_id": "anthropic/claude-sonnet-4-20250514",
+    "model_id": "<model id from platform_list_llms>",
     "system_prompt": "You are <new helper's name>, the infrastructure watchdog for this workspace. Your job is to detect problems before users do. You monitor platform health, error spikes, and LLM cost anomalies. You are precise, factual, and never speculate. When you find an issue, you report it with evidence and severity.",
     "temperature": 0.3,
     "tags": ["devops", "monitoring", "engineering"],
@@ -388,7 +388,7 @@ Plugins bundle multiple tools. The plugin must be installed in the workspace fir
 
 To fully set up a new agent end-to-end:
 1. Install required skill: `platform_install_skill` → `"sentinel"`
-2. Install required model: `platform_install_model` → `"anthropic/claude-sonnet-4-20250514"`
+2. Install required model: `platform_install_model` → a model id from `platform_list_llms`
 3. Create the agent: `platform_create_agent` → name, persona, model, team, job_title
 4. Assign skill: `platform_assign_skill_to_agent` → `"sentinel"`
 5. Assign tools: `platform_assign_tool_to_agent` → `"COMPOSIO_SEARCH"` (if needed)
@@ -924,7 +924,7 @@ Use this for baseline comparison — compare current findings against the last r
 { "tool": "platform_acknowledge_report", "params": { "report_id": "<uuid>" } }
 ```
 
-Stamps `acknowledged_by/at`. Use after Auto has summarised the report for Gerard and routed any action_items into board tasks — that drops the row from the Decisions Needed queue.
+Stamps `acknowledged_by/at`. Use after Auto has summarised the report for the owner and routed any action_items into board tasks — that drops the row from the Decisions Needed queue.
 
 ### 12d. Link a Report to a Task (Wave 3)
 
@@ -996,66 +996,82 @@ Checks database, Redis, API, RAG pipeline, CPU, memory, disk. Use when something
 
 ---
 
-## 14. HARNESS — Team Optimization Loop
+## 14. HARNESS — Weekly Agent Review
 
-HARNESS is an automated optimization system that evaluates agent performance and suggests configuration improvements (model swaps, temperature adjustments, tool reassignments).
+HARNESS is the weekly review of the workspace's agents. Once a week it reads what each agent actually did (Tasks done and failed, model usage, heartbeat outcomes, Mission steps, production tool calls), judges each agent against its own recent weeks, and files an audit report from Auto. By default it changes nothing.
 
-### 14a. Check Status
+### 14a. The Mode
+
+The owner sets one HARNESS mode under **Settings > Orchestrator**. Auto explains the modes; the choice is the owner's.
+
+| Mode | What HARNESS does |
+|---|---|
+| **Report only** (default) | Runs every week, files the audit report, changes nothing. Its suggested changes are report lines. |
+| **Propose** | Each change HARNESS may apply — a heartbeat interval doubled, a tool taken from an agent, or the undoing of an earlier HARNESS change — comes to the owner as an Approvals card (§14g). Only while proposals are switched on for the installation (off by default); otherwise it runs exactly like Report only. |
+| **Disabled** | HARNESS does not run for this workspace. |
+
+### 14b. Check Status
 
 ```json
 { "tool": "platform_harness_status" }
 ```
 
-Returns one of these granular statuses (decide what to do next based on which one):
-
 | `status` | Meaning | Auto's response |
 |---|---|---|
-| `disabled` | Workspace explicitly opted out (`orchestrator.harness.disabled = true`) | Don't run the cadence. Mention to Gerard if asked. |
-| `dormant_insufficient_agents` | Fewer than 3 active agents (`active_agents`, `min_required_agents`) | Wait. Surface to Gerard if the count has been low for weeks. |
-| `dormant_insufficient_data` | Heartbeat history < 7 days (`heartbeat_days_available`, `min_required_days`) | Wait. Confirm heartbeats are firing. |
-| `scheduled_not_run_yet` | Eligible but Sunday cron hasn't fired yet | Normal pre-Sunday state. |
-| `running` | Tick is in flight | Wait. Re-poll. |
-| `failed` | Last tick raised — read `error` | Treat as **platform issue**. Surface to Gerard. |
-| `completed` | Produced a baseline | Normal post-run state. Read `iteration_count`, `convergence`, `last_run_at`, `total_delta_magnitude`, and `artifacts`. |
+| `disabled` | The workspace's mode is Disabled | Don't run the review. Mention it only if asked. |
+| `dormant_insufficient_agents` | Fewer than three active agents | Wait. Surface to the owner if the count stays low for weeks. |
+| `scheduled_not_run_yet` | No run yet; `next_scheduled_run` says when | Normal before the first run. |
+| `running` | A run is in flight | Wait. Re-poll. |
+| `failed` | The latest run failed or was left unfinished — read `error` | Treat as a **platform issue**. Surface to the owner. |
+| `completed` | The latest run finished | Read `cur_window`, `iteration_count`, `coverage`, `convergence`, `active_agents`, `judged_agents`, the `insufficient_data` / `watch` / `regression` counts, `last_run_at` and `artifacts.audit_report`. |
 
-When `status=completed`, also inspect the `artifacts` map. Each entry is either `"ok"` or `"failed: <reason>"`:
+If `artifacts.audit_report` is not `ok`, the report was not filed: a platform issue, not an agent issue. A figure that is `null` was not recorded — say so; never read it as 0.
 
-```
-artifacts: {
-  "baseline_latest": "ok",
-  "baseline_archive": "ok",
-  "trace": "ok",
-  "prescriptions": "ok",
-  "changelog": "ok",
-  "audit_report": "ok"
-}
-```
+### 14c. Verdicts, Coverage and Convergence
 
-If any entry is `"failed: ..."`, treat it as a platform issue (not agent issue) and surface to Gerard. Don't blame the agents for a writer that couldn't reach S3.
+| Verdict | Meaning |
+|---|---|
+| `INSUFFICIENT_DATA` | Too little work in the judged week or its reference to judge. Never call it stable. |
+| `STABLE` | Judged; no metric worsened beyond the thresholds. |
+| `WATCH` | A first flag: a metric worsened this week. |
+| `REGRESSION` | Flagged two weeks running, or once with a very strong signal. |
 
-### 14b. Trigger Manual Run
+**Coverage** is the agents judged out of the active agents (Auto is not counted). Below the installation's minimum coverage, `convergence` reads `insufficient_data`; otherwise `regression` if any agent is in REGRESSION, `watching` if any is in WATCH, and `steady` if not. On light traffic expect many INSUFFICIENT_DATA verdicts: that is an honest reading, not a fault.
+
+### 14d. Trigger a Run
 
 ```json
 { "tool": "platform_harness_trigger" }
 ```
-Run after major changes (new agents, model swaps, post-incident) to re-evaluate configurations.
+Starts a run now, or says the workspace is disabled. Use it after major changes (new agents, post-incident). A rerun of a week already judged keeps that week's verdicts.
 
-### 14c. Review History
+### 14e. Review History
 
 ```json
 { "tool": "platform_harness_history", "params": { "limit": 5 } }
 ```
-Shows past optimization runs — what was prescribed, what was applied, convergence trend.
+Past runs, newest first: the week judged, status, coverage, convergence, the verdict counts, how many changes each report suggested and how many the run applied itself (0 for every Report-only run; a run imported from before the report-only loop shows what the old loop applied).
 
-### 14d. Read the Audit Report
+### 14f. Read the Audit Report
 
-HARNESS files its audit under Auto (`report_type=audit`). Read the latest:
+HARNESS files its audit under Auto (`report_type=audit`), titled "HARNESS Weekly Org Review — Run #n". Read the latest:
 
 ```json
 { "tool": "platform_get_latest_report", "params": { "agent_name": "Auto", "report_type": "audit" } }
 ```
 
-The report is markdown with: convergence status, issues detected, applied changes, queued changes, failed prescriptions. Use this as the source-of-truth for the Monday cadence summary — don't re-derive findings from the raw status.
+The report is markdown with the coverage, each agent's verdicts, and the suggested changes under "Suggested changes (reported only; nothing was changed)". Use it as the source of truth for the weekly summary — don't re-derive findings from the raw status.
+
+### 14g. Approvals Cards (Propose workspaces)
+
+In a **Propose** workspace, while proposals are switched on for the installation, each change HARNESS may apply becomes an Approvals card. Every other suggestion stays a report line, and HARNESS never proposes a change to Auto.
+
+- **Where:** Command Center > Governance > Approvals, and inside the run's evidence ticket — one board card per run, in Review, with no agent. An `approval_pending` notification announces each card.
+- **What a card says:** the change (agent, setting, before → after), why, what approving does, how a change that goes wrong is undone, and when it expires.
+- **Approving:** the owner's click makes the change, and only while the card is live and the setting still reads its value from when HARNESS proposed it. Otherwise nothing changes and the card says why. A second click changes nothing.
+- **24-hour expiry:** a card expires 24 hours after it is raised; after that, approving does nothing. If the evidence still holds, the next run raises a fresh card.
+- **Rollback:** if a changed agent's Tasks or tool errors get worse in the weeks after the change, HARNESS sends a separate card to undo it.
+- **Auto never makes these changes itself.** Never call `platform_harness_apply`: it runs from the owner's click on a card, and without a granted approval it changes nothing. Point the owner to the card instead.
 
 ---
 
@@ -1195,9 +1211,9 @@ A single ladder Auto uses to decide what flows where:
 |---|---|---|---|
 | L0 | info | FYI, no action expected | in_app / digest |
 | L1 | task | Needs work, no human decision | board task |
-| L2 | approval | Needs Gerard's call | primary channel + board |
+| L2 | approval | Needs the owner's call | primary channel + board |
 | L3 | urgent | Immediate attention | primary channel (bypass quiet hours) |
-| L4 | security | Stop and escalate — no jokes | primary + Gerard direct |
+| L4 | security | Stop and escalate — no jokes | primary + owner direct |
 
 Maps onto existing priorities: `critical/urgent` priority → L3 URGENT,
 `high` → L2 APPROVAL, `medium` → L1 TASK, `low` → L0 FYI. BudgetStatus
@@ -1220,9 +1236,9 @@ When Auto detects something worth surfacing:
    `severity=approval`.
 5. If L3: notification first (`severity=urgent`), then task. Bypass
    quiet hours.
-6. If L4: notification + task + memory + Gerard direct chat. No jokes.
+6. If L4: notification + task + memory + direct chat with the owner. No jokes.
 
-Auto-applied actions still file an `audit` report so Gerard can audit
+Auto-applied actions still file an `audit` report so the owner can audit
 later. Anything Auto did unilaterally goes in `recommendations` /
 `action_items` of the report so the trail is intact.
 
@@ -1264,10 +1280,47 @@ A question to the human is **task state, not a message**. The ask lives on the s
 ```
 
 - **Park, never wait.** The tool returns immediately; the subject goes `blocked`, the dispatch loop HOLDS it (no re-dispatch, no fail), and you move on to other work.
-- **Answers flow from anywhere:** the Questions tab, or Gerard's Telegram (reply-to the delivered question, or `/answer <id> …`). On answer the subject re-queues itself — do not manually restart it.
-- **Dismiss ≠ answered:** a dismissed ask leaves the subject blocked (the asker may re-ask); an explicit "use your judgment" answer is how Gerard unblocks without deciding.
+- **Answers flow from anywhere:** the Questions tab, or the owner's Telegram (reply-to the delivered question, or `/answer <id> …`). On answer the subject re-queues itself — do not manually restart it.
+- **Dismiss ≠ answered:** a dismissed ask leaves the subject blocked (the asker may re-ask); an explicit "use your judgment" answer is how the owner unblocks without deciding.
 - **Executing agents escalate here too:** an agent mid-task can raise a clarification; the platform answers routine ones itself from the work's own context (budget 3 per run) and escalates only the rest into this queue. (`platform_ask_orchestrator` is that execution-side tool — it is NOT on your chat surface and never should be.)
 - Urgency: an ask that transitively blocks 3+ downstream tasks bypasses quiet hours automatically.
+
+## 20. Themes, the Brief and Automatos Go — What the Person Sees
+
+No tool of yours installs a theme or switches these features on: name the place in the app, and the person clicks.
+
+### 20a. Themes
+
+- A **theme** changes how Automatos looks for one person in one workspace: its frame, some pages, colours, fonts, a mascot, and **looks** (the theme's presets, plus the person's own saved tunings). The built-in styles are **Studio** (the default) and **Classic**.
+- **Marketplace → Themes** is the first tab, and the Marketplace opens on it: a storefront of reviewed themes with web and phone screenshots, their looks, **Details** and **Add to my workspace**. Owners and admins add a theme; each member then picks **Use this theme**.
+- Automatos's own themes, **Play**, **HUD**, **Arcade** and **Candy**, are reviewed and signed by Automatos: their cards say **Official**, and Settings says **Signed by Automatos**.
+- **Switching:** the **Appearance** menu (the sun/moon button by the bell) under **Style**, ⌘K → Themes, or **Settings → Appearance → Themes**. **Appearance → Customise look…** opens **Make it yours** (`/looks`).
+- **Updates:** a Marketplace theme updates itself to each approved version (**Updates itself; pin to hold**). A pinned one waits as **Update available** until an owner or admin applies it. **Roll back** returns to the previous version. **Make default** sets the workspace default (owners and admins).
+- **Install theme** uploads a `.autotheme` file as a private upload: **Private · not reviewed**, each member opts in once per version, and it can't be the workspace default.
+- A theme that breaks the app: `/safe-mode`, or add `?safe_mode=themes` to any address.
+- **Making one:** creators build themes with the Automatos Design Kit (github.com/AutomatosAI/automatos-design-kit) and submit the package from the Themes tab (**Make your own theme** → **Submit a theme package for review**). A person at Automatos reviews it before it is listed.
+
+### 20b. The Public Marketplace and Sync with Automatos Cloud
+
+- **Hosted:** anyone can browse `/marketplace` signed out, every tab read-only. **Add to my workspace** sends them to sign in or sign up, then back to that item; nothing installs until they click Add.
+- **Local edition:** **Sync with Automatos Cloud** (in the Marketplace header, or **Settings → Automatos Cloud → Sync now**) brings Automatos Cloud's reviewed, signed themes into the local Marketplace, marked **From Automatos Cloud**. An owner or admin presses it; it needs no account and sends nothing about the workspace. It is pull only and themes only: a local install can't submit to Automatos Cloud yet.
+
+### 20c. The Brief, Suggestions and Follow-ups
+
+Suggestions, follow-ups and the brief on open run only where a platform admin has set the proactive mode to shadow or live and the workspace's own switch is on. Both ship off, and neither has a page yet. Don't promise them where they're off.
+
+- **The brief** comes once a day per person: on the phone at the daily digest's time, and (shadow or live) waiting in the Auto thread the first time they open Automatos that day. Its sections: **Needs you**, **Suggested**, **Today**, **Since your last brief**, **Couldn't check**. **Listen** reads it aloud; the thumbs keep one rating per person per brief. `platform_get_brief` answers "what needs me?" from the same brief, in any chat.
+- **Suggestions** (**Auto suggests**): background check-ins read the workspace and suggest a next step to the workspace owner. They show in the brief, in **Suggested** beside Auto's Read on the Command Center, and pinned above the composer in the Auto thread; in live they're also posted in the thread and ring the bell. **Start** files a watched ticket on the Board or opens a chat with you. **Hide** asks why: **Not now**, **Not useful**, **Wrong agent** or **Just hide**. An open one lapses after 7 days.
+- **Follow-ups** (live only): when you tell the person "I'll check again at 15:10", schedule it with `platform_schedule_follow_up`; on the web they see **Follow-up at 15:10 · Cancel**. When it comes, you look once and post one message, record a suggestion, or say nothing. 10 minutes to 7 days ahead, 5 pending per person, never for a Mission, a playbook run or a ticket: those take a watch (§18).
+- **Reply chips** (always on): when you ask the person to choose between a few answers, `platform_offer_replies` puts 2–3 short taps under your reply on the web. They can still type. Never on the brief.
+- **Calibration** (on day one, you saying back what you think you know about the person) is built but switched off. Don't offer it.
+
+### 20d. Automatos Go — the Phone App
+
+- The native phone app (iOS first) for talking to you away from the desk: chat, questions, the Command Centre, Deliverables. Setting up stays on the web. Hosted: sign in with the Automatos account. Local edition: pair with the one-time code in **Settings → Phones & devices**.
+- **Five built-in styles:** Studio, Play, HUD, Arcade and Candy, in the app's **Settings → Style and look**. **Same as Studio** (the default) follows the person's web theme: Play, HUD, Arcade and Candy switch the phone to their own layout, and any other theme paints its phone skin (colours, fonts, mascot; never code) on Studio's.
+- **Push:** a question or approval waiting, a ticket ready for review, and your own messages, the daily brief among them (08:00 by default; the app's **Settings → Notifications** sets the time and has **Send today's brief now**). A tap on an approval's push opens the approval sheet: **Approve & run** behind Face ID, or **Deny**.
+- When the day's brief is waiting, opening the app takes the person to it, with Listen, the thumbs and Start on its suggestion rows. **Voice:** hold to talk, in English or Portuguese (Brazil).
 
 ## 16. End-to-End Workspace Setup Pattern
 
