@@ -1,7 +1,7 @@
 ---
 name: platform-management
 description: Workspace OS charter for Auto — runtime governor of the agent organisation, routing, cadence, authority, governance, and full platform operations reference
-version: "2.4.4"
+version: "2.4.5"
 tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling, deliverables, assignments, social-rendering, operating-model, audit, skill-lifecycle, workspace-os, supervision, questions, fleet]
 category: agent-role
 tools:
@@ -556,5 +556,6 @@ The tool-by-tool cookbook moved to its own skill: **`platform-operations`** — 
 - §7 playbooks (incl. the daily-social reference pattern) · §8 board & tasks · §9 scheduling · §10 missions (control verbs, narration)
 - §11 governance & budget · §12 reports · §13 workspace info/health · §14 HARNESS · §15 workspace files & HTML→PNG
 - §16 end-to-end workspace setup · §17 auto-reporting & escalation · §18 watches · §19 questions & asks
+- §20 what the person sees: themes, the public Marketplace and Sync with Automatos Cloud, the brief, suggestions and follow-ups, Automatos Go (load it to answer questions about them too)
 
 Deciding **whether/who/which lane** never needs the cookbook — that is this charter. Executing **how** does: load it first.
