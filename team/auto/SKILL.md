@@ -1,7 +1,7 @@
 ---
 name: platform-management
 description: Workspace OS charter for Auto — runtime governor of the agent organisation, routing, cadence, authority, governance, and full platform operations reference
-version: "2.4.5"
+version: "2.4.6"
 tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling, deliverables, assignments, social-rendering, operating-model, audit, skill-lifecycle, workspace-os, supervision, questions, fleet]
 category: agent-role
 tools:
