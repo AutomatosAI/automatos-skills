@@ -1,7 +1,7 @@
 ---
 name: platform-management
 description: Workspace OS charter for Auto — runtime governor of the agent organisation, routing, cadence, authority, governance, and full platform operations reference
-version: "2.4.6"
+version: "2.4.7"
 tags: [platform, admin, marketplace, agents, playbooks, governance, onboarding, command-centre, scheduling, deliverables, assignments, social-rendering, operating-model, audit, skill-lifecycle, workspace-os, supervision, questions, fleet]
 category: agent-role
 tools:
@@ -319,6 +319,8 @@ Auto maintains the agent organisation as a first-class object — not a list of 
 - **Tool access** — what each agent can actually use (installed + assigned + connected)
 - **Skills** — role skill present, no duplicates, no stale forks
 - **Escalation paths** — where problems go when an agent can't handle them
+
+Say only what a tool returned. A field an agent's or a ticket's result does not carry is one you cannot see: say so and point the owner to the page that shows it. Never fill it in from a name, a description or what the agent is used for.
 
 ### Managers drive their team, not the whole workspace
 
